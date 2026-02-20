@@ -1,0 +1,26 @@
+import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Mail, Lock, User, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { clsx } from 'clsx';
+import { useAuth } from '../context/AuthContext';
+export const Auth = () => {
+    const [mode, setMode] = useState('login');
+    const [isLoading, setIsLoading] = useState(false);
+    const navigate = useNavigate();
+    const { login } = useAuth();
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        setIsLoading(true);
+        // Simulate login
+        setTimeout(() => {
+            setIsLoading(false);
+            login();
+            navigate('/profile');
+        }, 1500);
+    };
+    return (_jsx("div", { className: "min-h-[80vh] flex items-center justify-center px-4 py-12", children: _jsxs(motion.div, { initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 }, className: "w-full max-w-md bg-primary border border-base rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden", children: [_jsx("div", { className: "absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full -mr-16 -mt-16 blur-3xl" }), _jsx("div", { className: "absolute bottom-0 left-0 w-32 h-32 bg-accent/5 rounded-full -ml-16 -mb-16 blur-3xl" }), _jsxs("div", { className: "relative z-10 text-center mb-10", children: [_jsx("div", { className: "w-16 h-16 bg-accent rounded-2xl flex items-center justify-center text-white mx-auto mb-6 shadow-xl shadow-accent/20", children: _jsx(ShieldCheck, { className: "w-8 h-8" }) }), _jsx("h1", { className: "text-3xl font-black mb-2", children: mode === 'login' ? 'С возвращением!' : 'Присоединяйтесь' }), _jsx("p", { className: "text-secondary text-sm", children: mode === 'login'
+                                ? 'Войдите в свой аккаунт БиблиоТэка'
+                                : 'Создайте аккаунт, чтобы начать чтение' })] }), _jsxs("form", { onSubmit: handleSubmit, className: "space-y-4 relative z-10", children: [_jsx(AnimatePresence, { mode: "wait", children: mode === 'register' && (_jsx(motion.div, { initial: { opacity: 0, height: 0 }, animate: { opacity: 1, height: 'auto' }, exit: { opacity: 0, height: 0 }, className: "space-y-4 overflow-hidden", children: _jsxs("div", { className: "relative", children: [_jsx(User, { className: "absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary" }), _jsx("input", { required: true, type: "text", placeholder: "\u0412\u0430\u0448\u0435 \u0438\u043C\u044F", className: "w-full pl-12 pr-4 py-4 bg-secondary border border-base rounded-2xl focus:ring-2 focus:ring-accent outline-none transition-all" })] }) })) }), _jsxs("div", { className: "relative", children: [_jsx(Mail, { className: "absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary" }), _jsx("input", { required: true, type: "email", placeholder: "Email \u0430\u0434\u0440\u0435\u0441", className: "w-full pl-12 pr-4 py-4 bg-secondary border border-base rounded-2xl focus:ring-2 focus:ring-accent outline-none transition-all" })] }), _jsxs("div", { className: "relative", children: [_jsx(Lock, { className: "absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary" }), _jsx("input", { required: true, type: "password", placeholder: "\u041F\u0430\u0440\u043E\u043B\u044C", className: "w-full pl-12 pr-4 py-4 bg-secondary border border-base rounded-2xl focus:ring-2 focus:ring-accent outline-none transition-all" })] }), mode === 'login' && (_jsx("div", { className: "flex justify-end", children: _jsx("button", { type: "button", className: "text-xs font-bold text-accent hover:underline", children: "\u0417\u0430\u0431\u044B\u043B\u0438 \u043F\u0430\u0440\u043E\u043B\u044C?" }) })), _jsx("button", { disabled: isLoading, type: "submit", className: clsx("w-full py-4 rounded-2xl font-black text-white transition-all flex items-center justify-center gap-2 shadow-lg", isLoading ? "bg-accent/70 cursor-wait" : "bg-accent shadow-accent/20 hover:scale-[1.02] active:scale-95"), children: isLoading ? (_jsx("div", { className: "w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" })) : (_jsxs(_Fragment, { children: [mode === 'login' ? 'Войти' : 'Создать аккаунт', _jsx(ArrowRight, { className: "w-5 h-5" })] })) })] }), _jsx("div", { className: "mt-8 text-center relative z-10", children: _jsxs("p", { className: "text-secondary text-sm", children: [mode === 'login' ? 'Нет аккаунта?' : 'Уже есть аккаунт?', _jsx("button", { onClick: () => setMode(mode === 'login' ? 'register' : 'login'), className: "ml-2 font-black text-accent hover:underline", children: mode === 'login' ? 'Зарегистрироваться' : 'Войти' })] }) }), _jsxs("div", { className: "mt-8 pt-8 border-t border-base flex items-center justify-center gap-2 text-[10px] text-secondary font-bold uppercase tracking-widest relative z-10", children: [_jsx(CheckCircle2, { className: "w-4 h-4 text-emerald-500" }), "\u0411\u0435\u0437\u043E\u043F\u0430\u0441\u043D\u043E\u0435 \u0441\u043E\u0435\u0434\u0438\u043D\u0435\u043D\u0438\u0435 \u0411\u0438\u0431\u043B\u0438\u043E\u0422\u044D\u043A\u0430"] })] }) }));
+};

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Sun, Moon, Palette, User, LogOut, Menu, X, Settings } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -10,16 +11,18 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export const Header: React.FC<{ isAdmin?: boolean; isLoggedIn?: boolean }> = ({ isAdmin = true, isLoggedIn = true }) => {
+export const Header: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = true }) => {
   const { theme, toggleTheme, accent, setAccent, accentColors } = useTheme();
+  const { isLoggedIn, logout } = useAuth();
   const [showAccents, setShowAccents] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const navItems = [
     { label: 'Главная', path: '/' },
     { label: 'Каталог', path: '/catalog' },
     { label: 'Форум', path: '/forum' },
-    ...(isAdmin ? [{ label: 'Админка', path: '/admin' }] : []),
+    ...(isAdmin && isLoggedIn ? [{ label: 'Админка', path: '/admin' }] : []),
   ];
 
   return (
@@ -100,7 +103,15 @@ export const Header: React.FC<{ isAdmin?: boolean; isLoggedIn?: boolean }> = ({ 
                 </div>
                 <span className="text-sm font-medium hidden sm:block">Профиль</span>
               </Link>
-              <button className="p-2 rounded-full hover:bg-rose-500/10 text-secondary hover:text-rose-500 transition-colors">
+              <button
+                type="button"
+                onClick={() => {
+                  logout();
+                  navigate('/auth');
+                }}
+                className="p-2 rounded-full hover:bg-rose-500/10 text-secondary hover:text-rose-500 transition-colors"
+                aria-label="Выйти из профиля"
+              >
                 <LogOut className="w-5 h-5" />
               </button>
             </div>

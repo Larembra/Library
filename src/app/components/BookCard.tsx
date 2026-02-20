@@ -1,12 +1,11 @@
 import React from 'react';
-import { Star, StarHalf } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { Rating } from './Rating';
 import { Book } from '../data/mock';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
-export const BookCard: React.FC<{ book: Book }> = ({ book }) => {
+export const BookCard: React.FC<{ book: Book }> = React.memo(({ book }) => {
   return (
     <motion.div
       whileHover={{ y: -8 }}
@@ -23,11 +22,6 @@ export const BookCard: React.FC<{ book: Book }> = ({ book }) => {
              Читать
            </button>
         </div>
-        {book.isFree && (
-          <div className="absolute top-2 left-2 px-2 py-1 bg-green-500 text-white text-[10px] font-bold uppercase rounded-md shadow-sm">
-            Б��сплатно
-          </div>
-        )}
       </Link>
 
       <div className="flex flex-col gap-1">
@@ -52,4 +46,4 @@ export const BookCard: React.FC<{ book: Book }> = ({ book }) => {
       </div>
     </motion.div>
   );
-};
+});

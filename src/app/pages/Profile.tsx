@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { User, Mail, Shield, BookOpen, MessageSquare, History, Heart, Edit2, Camera, ExternalLink, Key } from 'lucide-react';
+import { Mail, Shield, BookOpen, MessageSquare, History, Heart, Edit2, Camera, Key, X, Check } from 'lucide-react';
 import { motion } from 'motion/react';
 import { clsx } from 'clsx';
 import { MOCK_BOOKS } from '../data/mock';
 import { BookCard } from '../components/BookCard';
 
 export const Profile: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'books' | 'history' | 'activity' | 'settings'>('books');
+  type TabId = 'books' | 'reviews' | 'history' | 'activity' | 'settings';
+  const [activeTab, setActiveTab] = useState<TabId>('books');
 
-  const user = {
+  const [user, setUser] = useState({
     name: 'Александр Ридер',
     email: 'alex.reader@example.com',
     bio: 'Люблю научную фантастику и киберпанк. Собираю коллекцию редких изданий. Всегда открыт для обсуждения интересных теорий на форуме!',
@@ -19,6 +20,58 @@ export const Profile: React.FC = () => {
       avgRating: 4.7,
       forumActivity: 856
     }
+  });
+
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isEditingBio, setIsEditingBio] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: user.name,
+    email: user.email
+  });
+  const [bioText, setBioText] = useState(user.bio);
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setUser(prev => ({ ...prev, avatar: event.target?.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setUser(prev => ({ ...prev, banner: event.target?.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const saveProfile = () => {
+    setUser(prev => ({
+      ...prev,
+      name: editForm.name,
+      email: editForm.email
+    }));
+    setIsEditingProfile(false);
+  };
+
+  const saveBio = () => {
+    setUser(prev => ({ ...prev, bio: bioText }));
+    setIsEditingBio(false);
+  };
+
+  const cancelEdit = () => {
+    setEditForm({
+      name: user.name,
+      email: user.email
+    });
+    setIsEditingProfile(false);
   };
 
   return (
@@ -28,9 +81,19 @@ export const Profile: React.FC = () => {
         <div className="h-48 md:h-64 rounded-3xl overflow-hidden border border-base relative group">
           <img src={user.banner} alt="Banner" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-black/20" />
-          <button className="absolute top-4 right-4 p-2 bg-white/20 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
+          <input
+            type="file"
+            id="bannerInput"
+            accept="image/*"
+            onChange={handleBannerChange}
+            className="hidden"
+          />
+          <label
+            htmlFor="bannerInput"
+            className="absolute top-4 right-4 p-2 bg-white/20 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-white/30"
+          >
             <Camera className="w-5 h-5" />
-          </button>
+          </label>
         </div>
         
         <div className="flex flex-col md:flex-row items-end gap-6 px-8 -mt-12 relative z-10">
@@ -38,20 +101,71 @@ export const Profile: React.FC = () => {
             <div className="w-32 h-32 md:w-40 md:h-40 rounded-3xl border-4 border-primary bg-primary overflow-hidden shadow-xl">
               <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
             </div>
-            <button className="absolute bottom-2 right-2 p-2 bg-accent text-white rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+            <input
+              type="file"
+              id="avatarInput"
+              accept="image/*"
+              onChange={handleAvatarChange}
+              className="hidden"
+            />
+            <label
+              htmlFor="avatarInput"
+              className="absolute bottom-2 right-2 p-2 bg-accent text-white rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-accent/90"
+            >
               <Edit2 className="w-4 h-4" />
-            </button>
+            </label>
           </div>
           <div className="flex-1 pb-2">
-            <h1 className="text-3xl font-black mb-1">{user.name}</h1>
-            <p className="text-secondary text-sm flex items-center gap-2">
-              <Mail className="w-4 h-4" /> {user.email}
-            </p>
+            {!isEditingProfile ? (
+              <>
+                <h1 className="text-3xl font-black mb-1">{user.name}</h1>
+                <p className="text-secondary text-sm flex items-center gap-2">
+                  <Mail className="w-4 h-4" /> {user.email}
+                </p>
+              </>
+            ) : (
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                  className="text-2xl font-black bg-secondary border border-base rounded-xl px-3 py-1 outline-none focus:ring-2 focus:ring-accent w-full"
+                  placeholder="Имя"
+                />
+                <input
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
+                  className="text-sm bg-secondary border border-base rounded-xl px-3 py-1 outline-none focus:ring-2 focus:ring-accent w-full"
+                  placeholder="Email"
+                />
+              </div>
+            )}
           </div>
           <div className="flex gap-3 pb-2">
-            <button className="px-6 py-2.5 bg-accent text-white rounded-xl font-bold text-sm shadow-lg shadow-accent/20">
-              Редактировать
-            </button>
+            {!isEditingProfile ? (
+              <button
+                onClick={() => setIsEditingProfile(true)}
+                className="px-6 py-2.5 bg-accent text-white rounded-xl font-bold text-sm shadow-lg shadow-accent/20 hover:bg-accent/90 transition-colors"
+              >
+                Редактировать
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={saveProfile}
+                  className="px-4 py-2.5 bg-accent text-white rounded-xl font-bold text-sm shadow-lg flex items-center gap-2"
+                >
+                  <Check className="w-4 h-4" /> Сохранить
+                </button>
+                <button
+                  onClick={cancelEdit}
+                  className="px-4 py-2.5 bg-secondary rounded-xl font-bold text-sm flex items-center gap-2"
+                >
+                  <X className="w-4 h-4" /> Отмена
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -84,26 +198,66 @@ export const Profile: React.FC = () => {
           </div>
 
           <div className="p-6 bg-secondary rounded-2xl border border-base">
-            <h3 className="font-bold mb-4">О себе</h3>
-            <p className="text-sm text-secondary leading-relaxed mb-4">{user.bio}</p>
-            <div className="flex gap-3">
-              <button className="p-2 bg-primary rounded-lg border border-base hover:text-accent transition-colors"><ExternalLink className="w-4 h-4" /></button>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold">О себе</h3>
+              {!isEditingBio && (
+                <button
+                  onClick={() => {
+                    setIsEditingBio(true);
+                    setBioText(user.bio);
+                  }}
+                  className="p-1 hover:bg-primary rounded-lg transition-colors"
+                >
+                  <Edit2 className="w-4 h-4 text-accent" />
+                </button>
+              )}
             </div>
+            {!isEditingBio ? (
+              <p className="text-sm text-secondary leading-relaxed mb-4">{user.bio}</p>
+            ) : (
+              <div className="space-y-2">
+                <textarea
+                  value={bioText}
+                  onChange={(e) => setBioText(e.target.value)}
+                  className="w-full p-3 bg-primary border border-base rounded-xl outline-none focus:ring-2 focus:ring-accent text-sm h-32"
+                  placeholder="Расскажите о себе..."
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={saveBio}
+                    className="flex-1 py-2 bg-accent text-white rounded-lg font-bold text-xs flex items-center justify-center gap-1"
+                  >
+                    <Check className="w-3 h-3" /> Сохранить
+                  </button>
+                  <button
+                    onClick={() => {
+                      setBioText(user.bio);
+                      setIsEditingBio(false);
+                    }}
+                    className="flex-1 py-2 bg-primary border border-base rounded-lg font-bold text-xs flex items-center justify-center gap-1"
+                  >
+                    <X className="w-3 h-3" /> Отмена
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Main Content */}
         <div className="lg:col-span-3 space-y-6">
           <div className="flex border-b border-base gap-8 overflow-x-auto no-scrollbar">
-            {[
-              { id: 'books', label: 'Избранное', icon: <Heart className="w-4 h-4" /> },
-              { id: 'reviews', label: 'Мои отзывы', icon: <MessageSquare className="w-4 h-4" /> },
-              { id: 'history', label: 'История', icon: <History className="w-4 h-4" /> },
-              { id: 'settings', label: 'Безопасность', icon: <Shield className="w-4 h-4" /> }
-            ].map(tab => (
+            {(
+              [
+                { id: 'books', label: 'Избранное', icon: <Heart className="w-4 h-4" /> },
+                { id: 'reviews', label: 'Мои отзывы', icon: <MessageSquare className="w-4 h-4" /> },
+                { id: 'history', label: 'История', icon: <History className="w-4 h-4" /> },
+                { id: 'settings', label: 'Безопасность', icon: <Shield className="w-4 h-4" /> }
+              ] as const
+            ).map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id)}
                 className={clsx(
                   "flex items-center gap-2 pb-4 text-sm font-bold transition-all relative whitespace-nowrap",
                   activeTab === tab.id ? "text-primary" : "text-secondary hover:text-primary"

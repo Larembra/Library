@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx } from 'clsx';
+import { useAuth } from '../context/AuthContext';
 
 export const Auth: React.FC = () => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -15,6 +17,7 @@ export const Auth: React.FC = () => {
     // Simulate login
     setTimeout(() => {
       setIsLoading(false);
+      login();
       navigate('/profile');
     }, 1500);
   };

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Plus, Search, Pin, Lock, MessageCircle, Loader2, X, Send, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx } from 'clsx';
+import { useAuth } from '../context/AuthContext';
 
 export const Forum: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = true }) => {
   const [topics, setTopics] = useState([...Array(6)].map((_, i) => ({
@@ -16,6 +17,7 @@ export const Forum: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = true }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showNewTopic, setShowNewTopic] = useState(false);
   const observerTarget = useRef(null);
+  const { isLoggedIn } = useAuth();
 
   const loadMoreTopics = () => {
     if (isLoading) return;
@@ -62,12 +64,14 @@ export const Forum: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = true }) => {
           <h1 className="text-3xl font-bold mb-2">Форум БиблиоТэка</h1>
           <p className="text-secondary">Обсуждайте книги и находите единомышленников</p>
         </div>
-        <button 
-          onClick={() => setShowNewTopic(true)}
-          className="flex items-center gap-2 px-6 py-3 bg-accent text-white rounded-xl font-bold shadow-lg shadow-accent/20 transition-transform active:scale-95"
-        >
-          <Plus className="w-5 h-5" /> Новая тема
-        </button>
+        {isLoggedIn && (
+          <button 
+            onClick={() => setShowNewTopic(true)}
+            className="flex items-center gap-2 px-6 py-3 bg-accent text-white rounded-xl font-bold shadow-lg shadow-accent/20 transition-transform active:scale-95"
+          >
+            <Plus className="w-5 h-5" /> Новая тема
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -85,7 +89,7 @@ export const Forum: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = true }) => {
                   <h3 className="text-lg font-bold group-hover:text-accent transition-colors">{topic.title}</h3>
                 </div>
                 
-                {isAdmin && (
+                {isAdmin && isLoggedIn && (
                   <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button 
                       onClick={(e) => togglePin(topic.id, e)}
@@ -145,7 +149,7 @@ export const Forum: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = true }) => {
 
       {/* New Topic Modal */}
       <AnimatePresence>
-        {showNewTopic && (
+        {showNewTopic && isLoggedIn && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <motion.div 
               initial={{ opacity: 0 }} 
@@ -181,7 +185,10 @@ export const Forum: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = true }) => {
                   />
                 </div>
                 <div className="pt-2">
-                  <button className="w-full py-4 bg-accent text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-accent/20 hover:opacity-90 transition-all">
+                  <button
+                    onClick={() => setShowNewTopic(false)}
+                    className="w-full py-4 bg-accent text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-accent/20 hover:opacity-90 transition-all"
+                  >
                     <Send className="w-5 h-5" /> Опубликовать тему
                   </button>
                 </div>
