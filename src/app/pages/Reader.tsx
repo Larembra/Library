@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Settings, List, Bookmark, Maximize2, Minimize2, Type, MoveVertical, AlignLeft } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { booksApi } from '../api/booksApi';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTheme } from '../context/ThemeContext';
 import { clsx } from 'clsx';
@@ -25,6 +27,25 @@ export const Reader: React.FC = () => {
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [progress, setProgress] = useState(35);
   const [currentPage, setCurrentPage] = useState(1);
+
+  const [searchParams] = useSearchParams();
+  const bookId = searchParams.get('bookId');
+  const [content, setContent] = useState('');
+  const [title, setTitle] = useState('Загрузка...');
+
+  useEffect(() => {
+    if (bookId) {
+      booksApi.getBookContent(Number(bookId))
+        .then(r => {
+          setContent(r.data.content || 'Во время загрузки потерялся контент...');
+          setTitle(r.data.title || 'Без названия');
+        })
+        .catch(() => {
+          setContent('Ошибка загрузки книги. Возможно, она недоступна.');
+          setTitle('Ошибка');
+        });
+    }
+  }, [bookId]);
 
   // Prevention of selection and context menu
   useEffect(() => {
@@ -63,7 +84,7 @@ export const Reader: React.FC = () => {
               <button onClick={() => window.history.back()} className="p-2 hover:bg-black/5 rounded-full">
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              <h1 className="text-sm font-semibold opacity-80">Тайны древнего кода — Глава 14</h1>
+              <h1 className="text-sm font-semibold opacity-80">{title}</h1>
             </div>
             <div className="flex items-center gap-2">
               <button onClick={() => setShowSettings(!showSettings)} className="p-2 hover:bg-black/5 rounded-full">
@@ -97,16 +118,17 @@ export const Reader: React.FC = () => {
             Контент защищен законом об авторском праве «БиблиоТэка»
           </div>
 
-          <h2 className="text-4xl font-bold mb-8 font-sans">Глава 14: Голос из Бездны</h2>
+          <h2 className="text-4xl font-bold mb-8 font-sans">{title}</h2>
 
-          {[...Array(10)].map((_, i) => (
-            <p key={i} className="mb-6 leading-relaxed">
-              В этом месте текст будет заменен на реальное содержание книги. Представьте захватывающий сюжет,
-              наполненный деталями и эмоциями. Мы используем адаптивные настройки, чтобы чтение было максимально
-              комфортным для каждого пользователя. Настраивайте шрифт, цвет фона и ширину строки под себя.
-              «БиблиоТэка» заботится о вашем зрении и удобстве.
-            </p>
-          ))}
+          {content ? (
+            content.split('\n\n').map((paragraph, i) => (
+              <p key={i} className="mb-6 leading-relaxed">
+                {paragraph}
+              </p>
+            ))
+          ) : (
+            <p className="mb-6 leading-relaxed">Загрузка текста...</p>
+          )}
         </article>
       </main>
 

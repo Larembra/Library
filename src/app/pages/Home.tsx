@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BookCard } from '../components/BookCard';
-import { MOCK_BOOKS } from '../data/mock';
 import { ArrowRight, Sparkles, TrendingUp, Clock, Bookmark, Info } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { booksApi, type Book } from '../api/booksApi';
+import { usersApi, type ReadingHistoryItem } from '../api/usersApi';
 
-const Section: React.FC<{ title: string; icon: React.ReactNode; books: typeof MOCK_BOOKS }> = ({ title, icon, books }) => {
+const Section: React.FC<{ title: string; icon: React.ReactNode; books: Book[] }> = ({ title, icon, books }) => {
   const navigate = useNavigate();
 
   return (
@@ -34,6 +35,24 @@ const Section: React.FC<{ title: string; icon: React.ReactNode; books: typeof MO
 
 export const Home: React.FC = () => {
   const { isLoggedIn } = useAuth();
+  const [books, setBooks] = useState<Book[]>([]);
+  const [lastRead, setLastRead] = useState<ReadingHistoryItem | null>(null);
+  const [lastReadBook, setLastReadBook] = useState<Book | null>(null);
+
+  useEffect(() => {
+    booksApi.getBooks({ per_page: 10, sort: 'popular' }).then(r => setBooks(r.data?.books || [])).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      usersApi.getReadingHistory().then(r => {
+        if (r.data.length > 0) {
+          setLastRead(r.data[0]);
+          booksApi.getBook(r.data[0].book_id).then(br => setLastReadBook(br.data)).catch(() => {});
+        }
+      }).catch(() => {});
+    }
+  }, [isLoggedIn]);
 
   return (
     <div className="container mx-auto px-4">
@@ -64,7 +83,7 @@ export const Home: React.FC = () => {
       </section>
 
       {/* Continue Reading */}
-      {isLoggedIn && (
+      {isLoggedIn && lastRead && lastReadBook && (
         <section className="pb-12 border-b border-base">
           <motion.div
             initial={{ opacity: 0, scale: 0.98 }}
@@ -73,26 +92,26 @@ export const Home: React.FC = () => {
           >
             <div className="flex-1 space-y-4">
               <span className="px-3 py-1 bg-accent/10 text-accent text-xs font-bold uppercase rounded-full">Продолжить чтение</span>
-              <h2 className="text-3xl font-bold leading-tight">Тайны древнего кода</h2>
+              <h2 className="text-3xl font-bold leading-tight">{lastReadBook.title}</h2>
               <p className="text-secondary max-w-lg">
-                Вы остановились на 14-й главе. Мир киберпанка ждет вашего возвращения...
+                Вы остановились на {lastRead.current_page}-й странице. Продолжайте чтение...
               </p>
               <div className="flex items-center gap-4">
-                <Link to="/reader" className="px-6 py-3 bg-accent text-white rounded-xl font-medium shadow-lg hover:shadow-accent/20 transition-all">
+                <Link to={`/reader?bookId=${lastReadBook.id}`} className="px-6 py-3 bg-accent text-white rounded-xl font-medium shadow-lg hover:shadow-accent/20 transition-all">
                   Читать дальше
                 </Link>
                 <div className="flex flex-col">
                   <span className="text-xs text-secondary font-medium">Прогресс</span>
                   <div className="w-32 h-1.5 bg-secondary rounded-full mt-1 overflow-hidden">
-                    <div className="h-full bg-accent w-[65%]" />
+                    <div className="h-full bg-accent" style={{ width: `${lastRead.progress_percent}%` }} />
                   </div>
                 </div>
               </div>
             </div>
             <div className="w-40 aspect-[2/3] shrink-0">
               <img
-                src={MOCK_BOOKS[0].cover}
-                alt="Current book"
+                src={lastReadBook.cover}
+                alt={lastReadBook.title}
                 className="w-full h-full object-cover rounded-xl shadow-2xl rotate-3 hover:rotate-0 transition-transform duration-500"
               />
             </div>
@@ -100,9 +119,9 @@ export const Home: React.FC = () => {
         </section>
       )}
 
-      <Section title="Популярные книги" icon={<TrendingUp className="w-6 h-6" />} books={MOCK_BOOKS} />
-      <Section title="Новинки" icon={<Sparkles className="w-6 h-6" />} books={MOCK_BOOKS.slice(0, 3)} />
-      <Section title="Рекомендовано вам" icon={<Bookmark className="w-6 h-6" />} books={MOCK_BOOKS.slice(2, 5)} />
+      <Section title="Популярные книги" icon={<TrendingUp className="w-6 h-6" />} books={books || []} />
+      <Section title="Новинки" icon={<Sparkles className="w-6 h-6" />} books={(books || []).slice(0, 3)} />
+      <Section title="Рекомендовано вам" icon={<Bookmark className="w-6 h-6" />} books={(books || []).slice(2, 5)} />
     </div>
   );
 };

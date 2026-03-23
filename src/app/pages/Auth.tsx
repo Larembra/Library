@@ -8,18 +8,29 @@ import { useAuth } from '../context/AuthContext';
 export const Auth: React.FC = () => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, register } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate login
-    setTimeout(() => {
-      setIsLoading(false);
-      login();
+    setError('');
+    try {
+      if (mode === 'login') {
+        await login(email, password);
+      } else {
+        await register(name, email, password);
+      }
       navigate('/profile');
-    }, 1500);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Произошла ошибка');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -47,6 +58,12 @@ export const Auth: React.FC = () => {
           </p>
         </div>
 
+        {error && (
+          <div className="mb-4 p-3 bg-rose-500/10 text-rose-500 text-sm rounded-xl text-center relative z-10">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
           <AnimatePresence mode="wait">
             {mode === 'register' && (
@@ -62,6 +79,8 @@ export const Auth: React.FC = () => {
                     required
                     type="text"
                     placeholder="Ваше имя"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                     className="w-full pl-12 pr-4 py-4 bg-secondary border border-base rounded-2xl focus:ring-2 focus:ring-accent outline-none transition-all"
                   />
                 </div>
@@ -75,6 +94,8 @@ export const Auth: React.FC = () => {
               required
               type="email"
               placeholder="Email адрес"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full pl-12 pr-4 py-4 bg-secondary border border-base rounded-2xl focus:ring-2 focus:ring-accent outline-none transition-all"
             />
           </div>
@@ -85,6 +106,8 @@ export const Auth: React.FC = () => {
               required
               type="password"
               placeholder="Пароль"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               className="w-full pl-12 pr-4 py-4 bg-secondary border border-base rounded-2xl focus:ring-2 focus:ring-accent outline-none transition-all"
             />
           </div>
@@ -118,7 +141,7 @@ export const Auth: React.FC = () => {
           <p className="text-secondary text-sm">
             {mode === 'login' ? 'Нет аккаунта?' : 'Уже есть аккаунт?'}
             <button
-              onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
+              onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); }}
               className="ml-2 font-black text-accent hover:underline"
             >
               {mode === 'login' ? 'Зарегистрироваться' : 'Войти'}

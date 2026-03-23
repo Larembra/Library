@@ -63,6 +63,12 @@ export default defineConfig({
     hmr: {
       overlay: false, // Отключение overlay ошибок
     },
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
   },
 
   // Предварительная оптимизация зависимостей

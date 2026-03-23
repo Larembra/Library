@@ -1,38 +1,78 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { authApi, type UserProfile } from '../api/authApi';
 
 type AuthContextValue = {
   isLoggedIn: boolean;
-  login: () => void;
+  user: UserProfile | null;
+  login: (email: string, password: string) => Promise<void>;
+  register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 };
-
-const AUTH_STORAGE_KEY = 'auth:isLoggedIn';
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
-    if (typeof window === 'undefined') {
-      return false;
-    }
-    return window.localStorage.getItem(AUTH_STORAGE_KEY) === 'true';
+    if (typeof window === 'undefined') return false;
+    return !!window.localStorage.getItem('auth:token');
+  });
+  const [user, setUser] = useState<UserProfile | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const saved = window.localStorage.getItem('auth:user');
+    return saved ? JSON.parse(saved) : null;
   });
 
-  const login = useCallback(() => {
-    setIsLoggedIn(true);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(AUTH_STORAGE_KEY, 'true');
+  const refreshUser = useCallback(async () => {
+    try {
+      const resp = await authApi.getMe();
+      setUser(resp.data);
+      localStorage.setItem('auth:user', JSON.stringify(resp.data));
+    } catch {
+      // Token invalid
+      setUser(null);
+      setIsLoggedIn(false);
+      localStorage.removeItem('auth:token');
+      localStorage.removeItem('auth:user');
     }
+  }, []);
+
+  useEffect(() => {
+    if (isLoggedIn && !user) {
+      refreshUser();
+    }
+  }, [isLoggedIn]);
+
+  const login = useCallback(async (email: string, password: string) => {
+    const resp = await authApi.login({ email, password });
+    localStorage.setItem('auth:token', resp.data.access_token);
+    setIsLoggedIn(true);
+    // Fetch user profile
+    const meResp = await authApi.getMe();
+    setUser(meResp.data);
+    localStorage.setItem('auth:user', JSON.stringify(meResp.data));
+  }, []);
+
+  const register = useCallback(async (username: string, email: string, password: string) => {
+    const resp = await authApi.register({ username, email, password });
+    localStorage.setItem('auth:token', resp.data.access_token);
+    setIsLoggedIn(true);
+    const meResp = await authApi.getMe();
+    setUser(meResp.data);
+    localStorage.setItem('auth:user', JSON.stringify(meResp.data));
   }, []);
 
   const logout = useCallback(() => {
     setIsLoggedIn(false);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(AUTH_STORAGE_KEY, 'false');
-    }
+    setUser(null);
+    localStorage.removeItem('auth:token');
+    localStorage.removeItem('auth:user');
   }, []);
 
-  const value = useMemo(() => ({ isLoggedIn, login, logout }), [isLoggedIn, login, logout]);
+  const value = useMemo(
+    () => ({ isLoggedIn, user, login, register, logout, refreshUser }),
+    [isLoggedIn, user, login, register, logout, refreshUser]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

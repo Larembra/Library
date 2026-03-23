@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { Rating } from './Rating';
-import { Book } from '../data/mock';
+import { type Book } from '../api/booksApi';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
 export const BookCard: React.FC<{ book: Book }> = React.memo(({ book }) => {
@@ -34,7 +34,7 @@ export const BookCard: React.FC<{ book: Book }> = React.memo(({ book }) => {
         <p className="text-xs text-secondary">{book.author}</p>
         <div className="flex items-center gap-2 mt-1">
           <Rating rating={book.rating} size={12} />
-          <span className="text-[10px] text-secondary">({book.reviewsCount})</span>
+          <span className="text-[10px] text-secondary">({book.reviews_count})</span>
         </div>
         <div className="flex flex-wrap gap-1 mt-2">
           {book.tags.slice(0, 2).map(tag => (

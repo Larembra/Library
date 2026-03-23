@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Filter, Grid, List as ListIcon, ChevronDown, Loader2 } from 'lucide-react';
 import { BookCard } from '../components/BookCard';
-import { MOCK_BOOKS, Book } from '../data/mock';
+import { booksApi, type Book } from '../api/booksApi';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx } from 'clsx';
 
@@ -12,27 +12,55 @@ export const Catalog: React.FC = () => {
   const [search, setSearch] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('Все');
   const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState('popular');
   
-  // Infinite scroll logic
-  const [books, setBooks] = useState<Book[]>(MOCK_BOOKS);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const observerTarget = useRef(null);
 
-  const loadMoreBooks = () => {
+  const fetchBooks = async (pageNum: number, append: boolean = false) => {
     if (isLoading) return;
     setIsLoading(true);
-    // Simulate API delay
-    setTimeout(() => {
-      setBooks(prev => [...prev, ...MOCK_BOOKS.map(b => ({ ...b, id: Math.random().toString() }))]);
+    try {
+      const resp = await booksApi.getBooks({
+        search: search || undefined,
+        genre: selectedGenre !== 'Все' ? selectedGenre : undefined,
+        sort: sortBy,
+        page: pageNum,
+        per_page: 20,
+      });
+      if (append) {
+        setBooks(prev => [...prev, ...resp.data.books]);
+      } else {
+        setBooks(resp.data.books);
+      }
+      setTotal(resp.data.total);
+      setHasMore(resp.data.books.length === 20);
+    } catch {
+      // silently fail
+    } finally {
       setIsLoading(false);
-    }, 800);
+    }
   };
 
+  // Initial load and filter changes
+  useEffect(() => {
+    setPage(1);
+    setHasMore(true);
+    fetchBooks(1, false);
+  }, [search, selectedGenre, sortBy]);
+
+  // Infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       entries => {
-        if (entries[0].isIntersecting) {
-          loadMoreBooks();
+        if (entries[0].isIntersecting && hasMore && !isLoading) {
+          const nextPage = page + 1;
+          setPage(nextPage);
+          fetchBooks(nextPage, true);
         }
       },
       { threshold: 1.0 }
@@ -43,14 +71,7 @@ export const Catalog: React.FC = () => {
     }
 
     return () => observer.disconnect();
-  }, [isLoading]);
-
-  const filteredBooks = books.filter(book => {
-    const matchesSearch = book.title.toLowerCase().includes(search.toLowerCase()) ||
-                         book.author.toLowerCase().includes(search.toLowerCase());
-    const matchesGenre = selectedGenre === 'Все' || book.genre === selectedGenre;
-    return matchesSearch && matchesGenre;
-  });
+  }, [page, hasMore, isLoading]);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -121,10 +142,14 @@ export const Catalog: React.FC = () => {
                 <div className="space-y-4">
                   <label className="text-xs font-bold uppercase text-secondary">Сортировка</label>
                   <div className="relative">
-                    <select className="w-full appearance-none px-4 py-2.5 bg-primary border border-base rounded-xl text-sm outline-none">
-                      <option>По популярности</option>
-                      <option>По новизне</option>
-                      <option>По рейтингу</option>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="w-full appearance-none px-4 py-2.5 bg-primary border border-base rounded-xl text-sm outline-none"
+                    >
+                      <option value="popular">По популярности</option>
+                      <option value="new">По новизне</option>
+                      <option value="rating">По рейтингу</option>
                     </select>
                     <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary pointer-events-none" />
                   </div>
@@ -137,7 +162,7 @@ export const Catalog: React.FC = () => {
 
       {/* Grid */}
       <div className={clsx("grid gap-8 mb-12", viewMode === 'grid' ? "grid-cols-2 md:grid-cols-4 lg:grid-cols-5" : "grid-cols-1")}>
-        {filteredBooks.map((book) => (
+        {books.map((book) => (
           viewMode === 'grid' ? (
             <BookCard key={book.id} book={book} />
           ) : (
