@@ -47,6 +47,9 @@ export const forumApi = {
   deleteTopic: (id: number) =>
     api.delete(`forum/topics/${id}`),
 
+  getTags: () =>
+    api.get<string[]>('forum/tags'),
+
   togglePin: (id: number) =>
     api.put<{ is_pinned: boolean }>(`forum/topics/${id}/pin`),
 

@@ -12,6 +12,7 @@ export interface Book {
   rating: number;
   reviews_count: number;
   tags: string[];
+  content: string;
   created_at: string;
 }
 
@@ -31,6 +32,7 @@ export interface BookCreateData {
   year?: number;
   is_free?: boolean;
   tags?: string[];
+  content?: string;
 }
 
 export const booksApi = {
@@ -51,4 +53,7 @@ export const booksApi = {
 
   deleteBook: (id: number) =>
     api.delete(`books/${id}`),
+
+  getGenres: () =>
+    api.get<string[]>('books/genres'),
 };

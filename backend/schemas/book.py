@@ -12,6 +12,7 @@ class BookCreate(BaseModel):
     year: Optional[int] = 2024
     is_free: Optional[bool] = False
     tags: Optional[List[str]] = []
+    content: Optional[str] = ""
 
 
 class BookUpdate(BaseModel):
@@ -23,6 +24,7 @@ class BookUpdate(BaseModel):
     year: Optional[int] = None
     is_free: Optional[bool] = None
     tags: Optional[List[str]] = None
+    content: Optional[str] = None
 
 
 class BookOut(BaseModel):
@@ -37,6 +39,7 @@ class BookOut(BaseModel):
     rating: float
     reviews_count: int
     tags: List[str] = []
+    content: Optional[str] = None
     created_at: datetime
 
     class Config:

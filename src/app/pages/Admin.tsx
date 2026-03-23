@@ -17,7 +17,18 @@ export const Admin: React.FC = () => {
   // Book modal state
   const [showBookModal, setShowBookModal] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
-  const [bookForm, setBookForm] = useState<BookCreateData>({ title: '', author: '', description: '', cover: '', genre: '', year: 2024, is_free: false, tags: [] });
+  const [bookForm, setBookForm] = useState<BookCreateData>({ 
+    title: '', 
+    author: '', 
+    description: '', 
+    cover: '', 
+    genre: '', 
+    year: 2024, 
+    is_free: false, 
+    tags: [],
+    content: ''
+  });
+  const genres = ["Фантастика", "Фэнтези", "Детектив", "Романтика", "Триллер", "Ужасы", "Приключения", "Научпоп", "Проза", "Классика"];
 
   // User create modal
   const [showUserModal, setShowUserModal] = useState(false);
@@ -28,10 +39,13 @@ export const Admin: React.FC = () => {
   const [searchBooks, setSearchBooks] = useState('');
   const [searchUsers, setSearchUsers] = useState('');
 
+  const [availableGenres, setAvailableGenres] = useState<string[]>([]);
+
   useEffect(() => {
     adminApi.getStats().then(r => setStats(r.data)).catch(() => {});
     booksApi.getBooks({ per_page: 100 }).then(r => setBooks(r.data.books)).catch(() => {});
     adminApi.getUsers().then(r => setUsers(r.data)).catch(() => {});
+    booksApi.getGenres().then(r => setAvailableGenres(r.data)).catch(() => {});
   }, []);
 
   const handleDeleteBook = async (bookId: number) => {
@@ -52,22 +66,40 @@ export const Admin: React.FC = () => {
       }
       setShowBookModal(false);
       setEditingBook(null);
-      setBookForm({ title: '', author: '', description: '', cover: '', genre: '', year: 2024, is_free: false, tags: [] });
+      setBookForm({ title: '', author: '', description: '', cover: '', genre: '', year: 2024, is_free: false, tags: [], content: '' });
     } catch {}
   };
 
-  const handleOpenEditBook = (book: Book) => {
+  const handleOpenEditBook = async (book: Book) => {
     setEditingBook(book);
-    setBookForm({
-      title: book.title,
-      author: book.author,
-      description: book.description,
-      cover: book.cover,
-      genre: book.genre,
-      year: book.year,
-      is_free: book.is_free,
-      tags: book.tags,
-    });
+    // Fetch full book data including content for editing/downloading
+    try {
+      const resp = await booksApi.getBook(book.id);
+      const fullBook = resp.data;
+      setBookForm({
+        title: fullBook.title,
+        author: fullBook.author,
+        description: fullBook.description,
+        cover: fullBook.cover,
+        genre: fullBook.genre,
+        year: fullBook.year,
+        is_free: fullBook.is_free,
+        tags: fullBook.tags,
+        content: fullBook.content,
+      });
+    } catch {
+      setBookForm({
+        title: book.title,
+        author: book.author,
+        description: book.description,
+        cover: book.cover,
+        genre: book.genre,
+        year: book.year,
+        is_free: book.is_free,
+        tags: book.tags,
+        content: book.content,
+      });
+    }
     setShowBookModal(true);
   };
 
@@ -163,7 +195,7 @@ export const Admin: React.FC = () => {
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary" />
                   <input type="text" value={searchBooks} onChange={(e) => setSearchBooks(e.target.value)} placeholder="Поиск книг..." className="w-full pl-12 pr-4 py-3 bg-secondary border border-base rounded-xl focus:ring-2 focus:ring-accent outline-none" />
                 </div>
-                <button onClick={() => { setEditingBook(null); setBookForm({ title: '', author: '', description: '', cover: '', genre: '', year: 2024, is_free: false, tags: [] }); setShowBookModal(true); }} className="flex items-center gap-2 px-6 py-3 bg-accent text-white rounded-xl font-bold shadow-lg">
+                <button onClick={() => { setEditingBook(null); setBookForm({ title: '', author: '', description: '', cover: '', genre: '', year: 2024, is_free: false, tags: [], content: '' }); setShowBookModal(true); }} className="flex items-center gap-2 px-6 py-3 bg-accent text-white rounded-xl font-bold shadow-lg">
                   <Plus className="w-5 h-5" /> Добавить книгу
                 </button>
               </div>
@@ -244,14 +276,88 @@ export const Admin: React.FC = () => {
                 <input type="text" placeholder="Автор" value={bookForm.author} onChange={(e) => setBookForm(prev => ({ ...prev, author: e.target.value }))} className="w-full px-4 py-3 bg-secondary border border-base rounded-xl focus:ring-2 focus:ring-accent outline-none" />
                 <textarea placeholder="Описание" value={bookForm.description} onChange={(e) => setBookForm(prev => ({ ...prev, description: e.target.value }))} className="w-full px-4 py-3 bg-secondary border border-base rounded-xl focus:ring-2 focus:ring-accent outline-none h-24" />
                 <input type="text" placeholder="Ссылка на обложку" value={bookForm.cover} onChange={(e) => setBookForm(prev => ({ ...prev, cover: e.target.value }))} className="w-full px-4 py-3 bg-secondary border border-base rounded-xl focus:ring-2 focus:ring-accent outline-none" />
-                <div className="grid grid-cols-2 gap-4">
-                  <input type="text" placeholder="Жанр" value={bookForm.genre} onChange={(e) => setBookForm(prev => ({ ...prev, genre: e.target.value }))} className="w-full px-4 py-3 bg-secondary border border-base rounded-xl focus:ring-2 focus:ring-accent outline-none" />
-                  <input type="number" placeholder="Год" value={bookForm.year} onChange={(e) => setBookForm(prev => ({ ...prev, year: parseInt(e.target.value) || 2024 }))} className="w-full px-4 py-3 bg-secondary border border-base rounded-xl focus:ring-2 focus:ring-accent outline-none" />
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase text-secondary">Жанры</label>
+                  <div className="flex flex-wrap gap-2">
+                    {genres.map(g => (
+                      <button
+                        key={g}
+                        onClick={() => {
+                          const currentGenres = (bookForm.genre || '').split(',').map(x => x.trim()).filter(Boolean);
+                          const nextGenres = currentGenres.includes(g)
+                            ? currentGenres.filter(x => x !== g)
+                            : [...currentGenres, g];
+                          setBookForm(prev => ({ ...prev, genre: nextGenres.join(', ') }));
+                        }}
+                        className={clsx(
+                          "px-3 py-1.5 rounded-lg text-xs font-bold transition-all border",
+                          (bookForm.genre || '').split(',').map(x => x.trim()).includes(g)
+                            ? "bg-accent text-white border-accent"
+                            : "bg-secondary text-secondary border-base hover:border-accent/30"
+                        )}
+                      >
+                        {g}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <label className="flex items-center gap-3">
-                  <input type="checkbox" checked={bookForm.is_free} onChange={(e) => setBookForm(prev => ({ ...prev, is_free: e.target.checked }))} className="w-4 h-4 accent-accent" />
-                  <span className="text-sm font-medium">Бесплатная книга</span>
-                </label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase text-secondary ml-1">Год издания</label>
+                    <input type="number" placeholder="Год" value={bookForm.year} onChange={(e) => setBookForm(prev => ({ ...prev, year: parseInt(e.target.value) || 2024 }))} className="w-full px-4 py-3 bg-secondary border border-base rounded-xl focus:ring-2 focus:ring-accent outline-none" />
+                  </div>
+                  <div className="flex items-end pb-3">
+                    <label className="flex items-center gap-3">
+                      <input type="checkbox" checked={bookForm.is_free} onChange={(e) => setBookForm(prev => ({ ...prev, is_free: e.target.checked }))} className="w-4 h-4 accent-accent" />
+                      <span className="text-sm font-medium">Бесплатная</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase text-secondary">Контент книги (.txt)</label>
+                  <div className="flex flex-col gap-2">
+                    <label className="w-full px-4 py-3 bg-secondary border border-base rounded-xl cursor-pointer hover:bg-secondary/80 transition-colors flex items-center justify-center gap-2 text-sm font-medium">
+                      <Plus className="w-4 h-4 text-accent" />
+                      Загрузить новый .txt
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        accept=".txt" 
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            setBookForm(prev => ({ ...prev, content: event.target?.result as string }));
+                          };
+                          reader.readAsText(file);
+                        }} 
+                      />
+                    </label>
+                    {editingBook && (
+                      <button 
+                        disabled={!bookForm.content}
+                        onClick={() => {
+                          if (!bookForm.content) return;
+                          const blob = new Blob([bookForm.content], { type: 'text/plain' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `${bookForm.title || 'book'}.txt`;
+                          a.click();
+                        }}
+                        className={clsx(
+                          "w-full px-4 py-3 border border-base rounded-xl transition-all flex items-center justify-center gap-2 text-sm font-medium",
+                          bookForm.content ? "bg-secondary hover:text-accent" : "bg-secondary/30 text-secondary opacity-50 cursor-not-allowed"
+                        )}
+                      >
+                        <BookOpen className="w-4 h-4" /> 
+                        {!bookForm.content ? "Содержание не загружено" : "Скачать текущее содержание"}
+                      </button>
+                    )}
+                  </div>
+                </div>
                 <button onClick={handleSaveBook} className="w-full py-3 bg-accent text-white rounded-xl font-bold flex items-center justify-center gap-2">
                   <Save className="w-5 h-5" /> {editingBook ? 'Сохранить' : 'Добавить'}
                 </button>

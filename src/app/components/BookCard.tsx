@@ -37,9 +37,9 @@ export const BookCard: React.FC<{ book: Book }> = React.memo(({ book }) => {
           <span className="text-[10px] text-secondary">({book.reviews_count})</span>
         </div>
         <div className="flex flex-wrap gap-1 mt-2">
-          {book.tags.slice(0, 2).map(tag => (
-            <span key={tag} className="px-2 py-0.5 bg-secondary text-secondary text-[10px] rounded-full border border-base">
-              {tag}
+          {(book.genre || '').split(',').map(g => g.trim()).filter(Boolean).slice(0, 3).map(label => (
+            <span key={label} className="px-2 py-0.5 bg-accent/5 text-accent text-[10px] rounded-full border border-accent/10">
+              {label}
             </span>
           ))}
         </div>

@@ -8,25 +8,38 @@ import { forumApi, type ForumTopic } from '../api/forumApi';
 
 export const Forum: React.FC<{ isAdmin?: boolean }> = () => {
   const [topics, setTopics] = useState<ForumTopic[]>([]);
+  const [showNewTopic, setShowNewTopic] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [showNewTopic, setShowNewTopic] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
+  const [newTag, setNewTag] = useState<string | null>(null);
+  const tags = ['Обсуждение', 'Теории', 'Спойлеры', 'Поиск книг', 'Конкурсы'];
   const observerTarget = useRef(null);
   const { isLoggedIn, user } = useAuth();
   const isAdmin = user?.role === 'admin';
 
-  const fetchTopics = async (pageNum: number, append: boolean = false) => {
+  const fetchTopics = async (pageNum: number, append: boolean = false, tagOverride?: string | null) => {
     if (isLoading) return;
     setIsLoading(true);
     try {
-      const resp = await forumApi.getTopics({ page: pageNum, per_page: 20 });
+      const resp = await forumApi.getTopics({ 
+        page: pageNum, 
+        per_page: 20,
+        search: searchQuery || undefined 
+      });
+      let filtered = resp.data;
+      const tagToFilter = tagOverride !== undefined ? tagOverride : activeTagFilter;
+      if (tagToFilter) {
+        filtered = filtered.filter(t => t.tag === tagToFilter);
+      }
       if (append) {
-        setTopics(prev => [...prev, ...resp.data]);
+        setTopics(prev => [...prev, ...filtered]);
       } else {
-        setTopics(resp.data);
+        setTopics(filtered);
       }
       setHasMore(resp.data.length === 20);
     } catch {} finally {
@@ -34,7 +47,9 @@ export const Forum: React.FC<{ isAdmin?: boolean }> = () => {
     }
   };
 
-  useEffect(() => { fetchTopics(1); }, []);
+  useEffect(() => { 
+    fetchTopics(1); 
+  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -68,9 +83,9 @@ export const Forum: React.FC<{ isAdmin?: boolean }> = () => {
   };
 
   const handleCreateTopic = async () => {
-    if (!newTitle.trim() || !newContent.trim()) return;
+    if (!newTitle.trim() || !newContent.trim() || !newTag) return;
     try {
-      const resp = await forumApi.createTopic({ title: newTitle, content: newContent });
+      const resp = await forumApi.createTopic({ title: newTitle, content: newContent, tag: newTag });
       setTopics(prev => [resp.data, ...prev]);
       setShowNewTopic(false);
       setNewTitle('');
@@ -124,10 +139,38 @@ export const Forum: React.FC<{ isAdmin?: boolean }> = () => {
         </div>
         <aside className="space-y-6">
           <div className="p-6 bg-secondary rounded-2xl border border-base sticky top-24">
-            <h4 className="font-bold mb-4">Популярные теги</h4>
+            <div className="mb-6">
+              <label className="text-xs font-bold uppercase text-secondary mb-2 block">Поиск по форуму</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary" />
+                <input 
+                  type="text" 
+                  placeholder="Заголовок или тег..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && fetchTopics(1)}
+                  className="w-full pl-9 pr-4 py-2 bg-primary border border-base rounded-xl text-sm outline-none focus:border-accent transition-all"
+                />
+              </div>
+            </div>
+            
+            <h4 className="font-bold mb-4">Фильтр по тегам</h4>
             <div className="flex flex-wrap gap-2">
-              {['Теории', 'Спойлеры', 'Поиск книг', 'Конкурсы', 'Оффтоп'].map(t => (
-                <button key={t} className="px-3 py-1.5 bg-primary border border-base rounded-lg text-xs hover:border-accent transition-colors">{t}</button>
+              {tags.map(t => (
+                <button 
+                  key={t} 
+                  onClick={() => {
+                    const nextTag = activeTagFilter === t ? null : t;
+                    setActiveTagFilter(nextTag);
+                    fetchTopics(1, false, nextTag);
+                  }}
+                  className={clsx(
+                    "px-3 py-1.5 border rounded-lg text-xs transition-colors",
+                    activeTagFilter === t ? "bg-accent text-white border-accent" : "bg-primary border-base hover:border-accent"
+                  )}
+                >
+                  {t}
+                </button>
               ))}
             </div>
           </div>
@@ -150,6 +193,23 @@ export const Forum: React.FC<{ isAdmin?: boolean }> = () => {
                 <div>
                   <label className="text-xs font-bold uppercase text-secondary mb-2 block">Сообщение</label>
                   <textarea value={newContent} onChange={(e) => setNewContent(e.target.value)} placeholder="Опишите вашу идею подробнее..." className="w-full px-4 py-3 bg-secondary border border-base rounded-xl focus:ring-2 focus:ring-accent outline-none transition-all min-h-[150px]" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold uppercase text-secondary mb-2 block">Тег темы</label>
+                  <div className="flex flex-wrap gap-2">
+                    {tags.map(t => (
+                      <button
+                        key={t}
+                        onClick={() => setNewTag(newTag === t ? null : t)}
+                        className={clsx(
+                          "px-3 py-1.5 rounded-lg text-xs font-bold transition-all border",
+                          newTag === t ? "bg-accent text-white border-accent" : "bg-secondary text-secondary border-base hover:border-accent/30"
+                        )}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div className="pt-2">
                   <button onClick={handleCreateTopic} className="w-full py-4 bg-accent text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-accent/20 hover:opacity-90 transition-all">

@@ -13,7 +13,7 @@ class Book(Base):
     author = Column(String(200), nullable=False)
     description = Column(Text, default="")
     cover = Column(String(500), default="")
-    genre = Column(String(100), default="")
+    genre = Column(Text, default="")
     year = Column(Integer, default=2024)
     is_free = Column(Boolean, default=False)
     rating = Column(Float, default=0.0)

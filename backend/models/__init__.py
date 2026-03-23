@@ -5,6 +5,7 @@ from backend.models.comment import Comment, CommentReaction
 from backend.models.forum import ForumTopic, ForumMessage, ForumMessageReaction
 from backend.models.favorite import Favorite
 from backend.models.reading_history import ReadingHistory
+from backend.models.bookmark import Bookmark
 
 __all__ = [
     "User",
@@ -14,4 +15,5 @@ __all__ = [
     "ForumTopic", "ForumMessage", "ForumMessageReaction",
     "Favorite",
     "ReadingHistory",
+    "Bookmark",
 ]

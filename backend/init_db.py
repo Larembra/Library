@@ -15,7 +15,7 @@ from backend.config import DATABASE_URL
 from backend.database import engine, Base, SessionLocal
 from backend.models import (
     User, Book, BookTag, Review, Comment,
-    ForumTopic, ForumMessage, ReadingHistory, Favorite,
+    ForumTopic, ForumMessage, ReadingHistory, Favorite, Bookmark,
 )
 from backend.services.auth_service import get_password_hash
 
@@ -129,7 +129,7 @@ def seed_data():
                 "is_free": True,
                 "rating": 4.8,
                 "reviews_count": 3,
-                "tags": ["Киберпанк", "Детектив"],
+                "tags": [],
                 "content": "Глава 1: Начало\n\nВ мире, где информация стала ценнее золота, один хакер находит код, способный изменить реальность. Его имя — Кирилл, и он работал в тени уже больше десяти лет.\n\nГлава 2: Находка\n\nОднажды ночью, просматривая зашифрованные данные с сервера, Кирилл наткнулся на последовательность символов, которая не поддавалась обычному дешифрованию. Это был код, написанный на языке, которого не существовало ни в одной базе данных мира.\n\nГлава 3: Тайна\n\nКод оказался ключом к древнему знанию, утерянному тысячи лет назад. Каждая строка открывала новый уровень понимания реальности, словно кто-то оставил послание из глубины веков.\n\n(Продолжение следует...)",
             },
             {
@@ -142,7 +142,7 @@ def seed_data():
                 "is_free": False,
                 "rating": 4.5,
                 "reviews_count": 1,
-                "tags": ["Романтика", "Драма"],
+                "tags": [],
                 "content": "Глава 1: Утро\n\nСвет пробивался сквозь тяжелые шторы. Лиза открыла глаза и поняла, что сегодня всё изменится.\n\n(Продолжение следует...)",
             },
             {
@@ -155,7 +155,7 @@ def seed_data():
                 "is_free": True,
                 "rating": 4.9,
                 "reviews_count": 1,
-                "tags": ["Эпическое фэнтези"],
+                "tags": [],
                 "content": "Глава 1: Пророчество\n\nВ древних свитках говорилось о дне, когда небо расколется надвое и забытые боги вернутся в мир смертных.\n\n(Продолжение следует...)",
             },
             {
@@ -163,12 +163,12 @@ def seed_data():
                 "author": "Елена Кузнецова",
                 "description": "Как наш мозг принимает решения и можно ли запрограммировать счастье?",
                 "cover": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRxtYYpvlDXC1mMaMDTJOTHqEZBzGOEKQN9yw&s",
-                "genre": "Образование",
+                "genre": "Научпоп",
                 "year": 2024,
                 "is_free": False,
                 "rating": 4.2,
                 "reviews_count": 0,
-                "tags": ["Научпоп", "Психология"],
+                "tags": [],
                 "content": "Введение\n\nКаждый день наш мозг принимает тысячи решений. Большинство из них мы даже не замечаем.\n\n(Продолжение следует...)",
             },
             {
@@ -176,12 +176,12 @@ def seed_data():
                 "author": "Виктор Смирнов",
                 "description": "Старый заброшенный дом хранит тайны, о которых лучше было бы забыть.",
                 "cover": "https://cdn.azbooka.ru/cv/w1100/c417988a-a1e5-4cdf-accb-c5c1dc63f65d.jpg",
-                "genre": "Детектив",
+                "genre": "Детектив, Триллер",
                 "year": 2022,
                 "is_free": True,
                 "rating": 4.7,
                 "reviews_count": 0,
-                "tags": ["Триллер", "Мистика"],
+                "tags": [],
                 "content": "Пролог\n\nДом стоял на окраине города уже больше пятидесяти лет. Его окна были заколочены, а дверь — заперта на три замка.\n\n(Продолжение следует...)",
             },
         ]
@@ -296,7 +296,16 @@ def seed_data():
         for book in book_objects[:3]:
             db.add(Favorite(user_id=admin.id, book_id=book.id))
 
-        print("  📖 Создана история чтения и избранное для админа")
+        # ── Bookmarks (for admin user) ─────────────────────────
+        db.add(Bookmark(
+            user_id=admin.id,
+            book_id=book_objects[0].id,
+            paragraph_index=2,
+            name="Важный момент",
+            description="Здесь Кирилл находит код"
+        ))
+
+        print("  📖 Создана история чтения, избранное и закладки для админа")
 
         db.commit()
         print("✅ Все начальные данные загружены!")

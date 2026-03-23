@@ -50,6 +50,23 @@ export const Profile: React.FC = () => {
     } catch {}
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'banner') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64String = reader.result as string;
+      try {
+        await usersApi.updateProfile({ [type]: base64String });
+        refreshUser();
+      } catch (err) {
+        console.error(`Error updating ${type}:`, err);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleChangePassword = async () => {
     setPasswordError('');
     setPasswordSuccess('');
@@ -89,7 +106,12 @@ export const Profile: React.FC = () => {
           {user.banner && <img src={user.banner} alt="" className="w-full h-full object-cover" />}
           <label className="absolute top-4 right-4 px-4 py-2 bg-black/60 text-white rounded-xl backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 cursor-pointer hover:bg-black/80 font-medium text-sm">
             <Camera className="w-4 h-4" /> Изменить фон
-            <input type="file" className="hidden" accept="image/*" />
+            <input 
+              type="file" 
+              className="hidden" 
+              accept="image/*" 
+              onChange={(e) => handleImageUpload(e, 'banner')}
+            />
           </label>
         </div>
         <div className="absolute -bottom-16 left-8 flex items-end gap-6">
@@ -99,7 +121,12 @@ export const Profile: React.FC = () => {
               <label className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                 <Camera className="w-8 h-8 text-white mb-1" />
                 <span className="text-white text-xs font-bold">Изменить</span>
-                <input type="file" className="hidden" accept="image/*" />
+                <input 
+                  type="file" 
+                  className="hidden" 
+                  accept="image/*" 
+                  onChange={(e) => handleImageUpload(e, 'avatar')}
+                />
               </label>
             </div>
           </div>
@@ -211,7 +238,7 @@ export const Profile: React.FC = () => {
                       </div>
                       <div className="flex-1">
                         <p className="font-bold text-sm">{item.book_title}</p>
-                        <p className="text-xs text-secondary">Стр. {item.current_page}</p>
+                        <p className="text-xs text-secondary italic">Последнее чтение: {new Date(item.last_read_at).toLocaleDateString()}</p>
                         <div className="flex items-center gap-2 mt-2">
                           <div className="flex-1 h-1.5 bg-primary rounded-full overflow-hidden">
                             <div className="h-full bg-accent" style={{ width: `${item.progress_percent}%` }} />

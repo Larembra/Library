@@ -5,13 +5,15 @@ import { booksApi, type Book } from '../api/booksApi';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx } from 'clsx';
 
-const GENRES = ['Все', 'Фантастика', 'Фэнтези', 'Проза', 'Детектив', 'Триллер', 'Образование', 'Психология'];
+// Default genres as fallback
+const DEFAULT_GENRES = ['Все', 'Фантастика', 'Фэнтези', 'Проза', 'Детектив', 'Триллер', 'Образование', 'Психология'];
 
 export const Catalog: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [search, setSearch] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('Все');
   const [showFilters, setShowFilters] = useState(false);
+  const genres = ["Все", "Фантастика", "Фэнтези", "Детектив", "Романтика", "Триллер", "Ужасы", "Приключения", "Научпоп", "Проза", "Классика"];
   const [sortBy, setSortBy] = useState('popular');
   
   const [books, setBooks] = useState<Book[]>([]);
@@ -19,6 +21,7 @@ export const Catalog: React.FC = () => {
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [availableGenres, setAvailableGenres] = useState<string[]>(DEFAULT_GENRES);
   const observerTarget = useRef(null);
 
   const fetchBooks = async (pageNum: number, append: boolean = false) => {
@@ -52,6 +55,15 @@ export const Catalog: React.FC = () => {
     setHasMore(true);
     fetchBooks(1, false);
   }, [search, selectedGenre, sortBy]);
+
+  // Load available genres
+  useEffect(() => {
+    booksApi.getGenres().then(r => {
+      if (r.data.length > 0) {
+        setAvailableGenres(['Все', ...r.data]);
+      }
+    }).catch(() => {});
+  }, []);
 
   // Infinite scroll
   useEffect(() => {
@@ -125,12 +137,12 @@ export const Catalog: React.FC = () => {
                 <div className="space-y-4">
                   <label className="text-xs font-bold uppercase text-secondary">Жанры</label>
                   <div className="flex flex-wrap gap-2">
-                    {GENRES.map(genre => (
+                    {genres.map(genre => (
                       <button
                         key={genre}
                         onClick={() => setSelectedGenre(genre)}
                         className={clsx(
-                          "px-3 py-1.5 rounded-full text-xs font-medium transition-colors",
+                          "px-3 py-1.5 rounded-full text-xs font-medium transition-all",
                           selectedGenre === genre ? "bg-accent text-white" : "bg-primary border border-base text-secondary hover:border-accent"
                         )}
                       >
@@ -175,6 +187,15 @@ export const Catalog: React.FC = () => {
                   <h3 className="text-lg font-bold mb-1">{book.title}</h3>
                   <p className="text-secondary text-sm mb-2">{book.author}</p>
                   <p className="text-sm line-clamp-2 opacity-70 mb-4">{book.description}</p>
+                </div>
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="flex flex-wrap gap-2">
+                    {(book.genre || '').split(',').map(g => g.trim()).filter(Boolean).map(label => (
+                      <span key={label} className="px-2 py-1 bg-accent/5 text-accent text-[10px] font-bold rounded uppercase border border-accent/10">
+                        {label}
+                      </span>
+                    ))}
+                  </div>
                 </div>
                 <div className="flex items-center gap-4">
                   <button className="px-6 py-2 bg-accent text-white rounded-lg text-sm font-medium">Читать</button>

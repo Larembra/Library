@@ -94,7 +94,7 @@ export const Home: React.FC = () => {
               <span className="px-3 py-1 bg-accent/10 text-accent text-xs font-bold uppercase rounded-full">Продолжить чтение</span>
               <h2 className="text-3xl font-bold leading-tight">{lastReadBook.title}</h2>
               <p className="text-secondary max-w-lg">
-                Вы остановились на {lastRead.current_page}-й странице. Продолжайте чтение...
+                Вы остановились здесь в прошлый раз. Продолжайте чтение с того же места.
               </p>
               <div className="flex items-center gap-4">
                 <Link to={`/reader?bookId=${lastReadBook.id}`} className="px-6 py-3 bg-accent text-white rounded-xl font-medium shadow-lg hover:shadow-accent/20 transition-all">

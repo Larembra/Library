@@ -1,8 +1,8 @@
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 
 from backend.dependencies import get_db, get_current_admin
 from backend.models.book import Book, BookTag
@@ -26,6 +26,7 @@ def _book_to_out(book: Book, db: Session) -> BookOut:
         rating=book.rating,
         reviews_count=book.reviews_count,
         tags=[t[0] for t in tags],
+        content=book.content,
         created_at=book.created_at,
     )
 
@@ -49,7 +50,7 @@ def get_books(
             )
         )
     if genre and genre != "Все":
-        query = query.filter(Book.genre == genre)
+        query = query.filter(Book.genre.ilike(f"%{genre}%"))
 
     if sort == "rating":
         query = query.order_by(Book.rating.desc())
@@ -99,6 +100,7 @@ def create_book(
         genre=data.genre or "",
         year=data.year or 2024,
         is_free=data.is_free or False,
+        content=data.content or "",
     )
     db.add(book)
     db.commit()
@@ -137,6 +139,8 @@ def update_book(
         book.year = data.year
     if data.is_free is not None:
         book.is_free = data.is_free
+    if data.content is not None:
+        book.content = data.content
 
     if data.tags is not None:
         db.query(BookTag).filter(BookTag.book_id == book.id).delete()
@@ -159,4 +163,3 @@ def delete_book(
         raise HTTPException(status_code=404, detail="Книга не найдена")
     db.delete(book)
     db.commit()
-    return {"message": "Книга удалена"}

@@ -12,8 +12,8 @@ class User(Base):
     username = Column(String(100), nullable=False)
     email = Column(String(255), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
-    avatar = Column(String(500), default="")
-    banner = Column(String(500), default="")
+    avatar = Column(Text, nullable=True)
+    banner = Column(Text, nullable=True)
     about = Column(Text, default="")
     role = Column(String(20), default="reader")  # reader | admin
     is_active = Column(Boolean, default=True)

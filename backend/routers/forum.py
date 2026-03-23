@@ -3,7 +3,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from backend.dependencies import get_db, get_current_user, get_current_admin, get_optional_user
 from backend.models.forum import ForumTopic, ForumMessage, ForumMessageReaction
@@ -69,7 +69,14 @@ def get_topics(
 ):
     query = db.query(ForumTopic)
     if search:
-        query = query.filter(ForumTopic.title.ilike(f"%{search}%"))
+        query = query.join(User, ForumTopic.author_id == User.id)
+        query = query.filter(
+            or_(
+                ForumTopic.title.ilike(f"%{search}%"),
+                User.username.ilike(f"%{search}%"),
+                ForumTopic.tag.ilike(f"%{search}%"),
+            )
+        )
     query = query.order_by(ForumTopic.is_pinned.desc(), ForumTopic.last_activity.desc())
     topics = query.offset((page - 1) * per_page).limit(per_page).all()
     return [_topic_to_out(t, db) for t in topics]
@@ -229,4 +236,7 @@ def react_to_message(
         db.add(ForumMessageReaction(message_id=message_id, user_id=user.id, reaction_type=data.reaction_type))
 
     db.commit()
-    return {"likes": msg.likes, "dislikes": msg.dislikes}
+@router.get("/tags", response_model=List[str])
+def get_tags(db: Session = Depends(get_db)):
+    tags = db.query(ForumTopic.tag).distinct().all()
+    return sorted([t[0] for t in tags if t[0]])

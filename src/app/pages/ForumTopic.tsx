@@ -52,8 +52,10 @@ export const ForumTopic: React.FC = () => {
 
   const handleSendReply = async (parentId: number) => {
     if (!isLoggedIn || !replyText.trim()) return;
+    const parentMsg = messages.find(m => m.id === parentId);
+    const nickname = parentMsg ? `${parentMsg.author_name}, ` : '';
     try {
-      const resp = await forumApi.createMessage(topicId, { content: replyText, parent_id: parentId });
+      const resp = await forumApi.createMessage(topicId, { content: nickname + replyText, parent_id: parentId });
       setMessages(prev => [...prev, resp.data]);
       setReplyText('');
       setReplyingTo(null);

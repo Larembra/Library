@@ -11,9 +11,10 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export const Header: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = true }) => {
+export const Header: React.FC = () => {
   const { theme, toggleTheme, accent, setAccent, accentColors } = useTheme();
-  const { isLoggedIn, logout } = useAuth();
+  const { isLoggedIn, logout, user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [showAccents, setShowAccents] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -99,7 +100,11 @@ export const Header: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = true }) => {
             <div className="flex items-center gap-3">
               <Link to="/profile" className="flex items-center gap-2 hover:bg-secondary p-1 pr-3 rounded-full transition-colors">
                 <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-accent overflow-hidden">
-                  <User className="w-5 h-5" />
+                  {user?.avatar ? (
+                    <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-5 h-5" />
+                  )}
                 </div>
                 <span className="text-sm font-medium hidden sm:block">Профиль</span>
               </Link>

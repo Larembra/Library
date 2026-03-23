@@ -116,8 +116,10 @@ export const BookDetails: React.FC = () => {
 
   const submitReply = async (parentId: number) => {
     if (!isLoggedIn || !replyText.trim()) return;
+    const parentComment = comments.find(c => c.id === parentId);
+    const nickname = parentComment ? `${parentComment.user_name}, ` : '';
     try {
-      await commentsApi.createComment(bookId, { content: replyText, parent_id: parentId });
+      await commentsApi.createComment(bookId, { content: nickname + replyText, parent_id: parentId });
       // Refresh comments
       const resp = await commentsApi.getComments(bookId);
       setComments(resp.data);
