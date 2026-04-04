@@ -70,6 +70,17 @@ def get_books(
     )
 
 
+@router.get("/genres", response_model=List[str])
+def get_genres(db: Session = Depends(get_db)):
+    genres = db.query(Book.genre).distinct().all()
+    result = set()
+    for (g_str,) in genres:
+        if g_str:
+            for g in g_str.split(','):
+                result.add(g.strip())
+    return sorted(list(result))
+
+
 @router.get("/{book_id}", response_model=BookOut)
 def get_book(book_id: int, db: Session = Depends(get_db)):
     book = db.query(Book).filter(Book.id == book_id).first()

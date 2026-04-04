@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from backend.dependencies import get_db, get_current_user, get_optional_user
 from backend.models.comment import Comment, CommentReaction
 from backend.models.user import User
+from backend.models.book import Book
 from backend.schemas.comment import CommentCreate, CommentOut
 from backend.schemas.review import ReactionRequest
 
@@ -14,6 +15,7 @@ router = APIRouter(prefix="/api", tags=["comments"])
 
 def _comment_to_out(comment: Comment, db: Session, current_user: Optional[User] = None) -> CommentOut:
     user = db.query(User).filter(User.id == comment.user_id).first()
+    book = db.query(Book).filter(Book.id == comment.book_id).first()
     liked = False
     disliked = False
     if current_user:
@@ -32,6 +34,7 @@ def _comment_to_out(comment: Comment, db: Session, current_user: Optional[User] 
     return CommentOut(
         id=comment.id,
         book_id=comment.book_id,
+        book_title=book.title if book else "",
         user_id=comment.user_id,
         user_name=user.username if user else "",
         user_avatar=user.avatar if user else "",

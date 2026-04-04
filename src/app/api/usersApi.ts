@@ -14,6 +14,23 @@ export interface ReadingHistoryItem {
   last_read_at: string;
 }
 
+export interface UserPublicProfile {
+  id: number;
+  username: string;
+  avatar: string | null;
+  banner: string | null;
+  about: string | null;
+  role: string;
+  created_at: string;
+}
+
+export interface UserProfileResponse {
+  user: UserPublicProfile;
+  reviews: Review[];
+  comments: Comment[];
+  topics: ForumTopic[];
+}
+
 export const usersApi = {
   getProfile: () =>
     api.get<UserProfile>('users/me'),
@@ -50,4 +67,7 @@ export const usersApi = {
 
   getTopics: () =>
     api.get<ForumTopic[]>('users/me/topics'),
+
+  getUserProfile: (userId: number) =>
+    api.get<UserProfileResponse>(`users/${userId}`),
 };

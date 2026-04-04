@@ -14,6 +14,7 @@ router = APIRouter(prefix="/api", tags=["reviews"])
 
 def _review_to_out(review: Review, db: Session, current_user: Optional[User] = None) -> ReviewOut:
     user = db.query(User).filter(User.id == review.user_id).first()
+    book = db.query(Book).filter(Book.id == review.book_id).first()
     liked = False
     disliked = False
     if current_user:
@@ -28,6 +29,7 @@ def _review_to_out(review: Review, db: Session, current_user: Optional[User] = N
     return ReviewOut(
         id=review.id,
         book_id=review.book_id,
+        book_title=book.title if book else "",
         user_id=review.user_id,
         user_name=user.username if user else "",
         user_avatar=user.avatar if user else "",

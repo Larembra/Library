@@ -1,5 +1,6 @@
 from typing import Optional, List
 from datetime import datetime
+from backend.utils.time_utils import get_moscow_now
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -175,7 +176,7 @@ def create_message(
         parent_id=data.parent_id,
     )
     db.add(msg)
-    topic.last_activity = datetime.utcnow()
+    topic.last_activity = get_moscow_now()
     db.commit()
     db.refresh(msg)
     return _message_to_out(msg, db, user)

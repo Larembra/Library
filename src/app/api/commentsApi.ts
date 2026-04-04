@@ -3,6 +3,9 @@ import api from './client';
 export interface Comment {
   id: number;
   book_id: number;
+  book_title?: string;
+  topic_id?: number;
+  topic_title?: string;
   user_id: number;
   user_name: string;
   user_avatar: string;
@@ -28,4 +31,7 @@ export const commentsApi = {
 
   reactToComment: (commentId: number, reactionType: 'like' | 'dislike') =>
     api.post<{ likes: number; dislikes: number }>(`comments/${commentId}/react`, { reaction_type: reactionType }),
+
+  reportComment: (commentId: number, reason: string) =>
+    api.post('reports', { target_type: 'comment', target_id: commentId, reason }),
 };

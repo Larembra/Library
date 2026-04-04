@@ -5,6 +5,9 @@ from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Foreign
 from backend.database import Base
 
 
+from backend.utils.time_utils import get_moscow_now
+
+
 class ForumTopic(Base):
     __tablename__ = "forum_topics"
 
@@ -14,8 +17,8 @@ class ForumTopic(Base):
     is_pinned = Column(Boolean, default=False)
     is_locked = Column(Boolean, default=False)
     tag = Column(String(100), default="Обсуждение")
-    created_at = Column(DateTime, default=datetime.utcnow)
-    last_activity = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=get_moscow_now)
+    last_activity = Column(DateTime, default=get_moscow_now)
 
 
 class ForumMessage(Base):
@@ -28,7 +31,7 @@ class ForumMessage(Base):
     likes = Column(Integer, default=0)
     dislikes = Column(Integer, default=0)
     parent_id = Column(Integer, ForeignKey("forum_messages.id", ondelete="CASCADE"), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=get_moscow_now)
 
 
 class ForumMessageReaction(Base):

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Pin, Lock, MessageCircle, Loader2, X, Send, Trash2 } from 'lucide-react';
+import { Plus, Search, Pin, Lock, MessageCircle, Loader2, X, Send, Trash2, Flag } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx } from 'clsx';
 import { useAuth } from '../context/AuthContext';
@@ -21,6 +21,33 @@ export const Forum: React.FC<{ isAdmin?: boolean }> = () => {
   const observerTarget = useRef(null);
   const { isLoggedIn, user } = useAuth();
   const isAdmin = user?.role === 'admin';
+
+  // Report
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportTopicId, setReportTopicId] = useState<number | null>(null);
+  const [reportReason, setReportReason] = useState('');
+  const [reportSuccess, setReportSuccess] = useState(false);
+  const [reportError, setReportError] = useState('');
+
+  const openReportTopic = (topicId: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    setReportTopicId(topicId);
+    setReportReason('');
+    setReportSuccess(false);
+    setReportError('');
+    setShowReportModal(true);
+  };
+
+  const submitTopicReport = async () => {
+    if (!reportTopicId || !reportReason.trim()) return;
+    try {
+      await forumApi.reportTopic(reportTopicId, reportReason);
+      setReportSuccess(true);
+      setTimeout(() => setShowReportModal(false), 1500);
+    } catch (e: any) {
+      setReportError(e.response?.data?.detail || 'Ошибка при отправке жалобы');
+    }
+  };
 
   const fetchTopics = async (pageNum: number, append: boolean = false, tagOverride?: string | null) => {
     if (isLoading) return;
@@ -117,12 +144,17 @@ export const Forum: React.FC<{ isAdmin?: boolean }> = () => {
                   {topic.is_locked && <span className="p-1 bg-secondary text-secondary rounded"><Lock className="w-4 h-4" /></span>}
                   <h3 className="text-lg font-bold group-hover:text-accent transition-colors">{topic.title}</h3>
                 </div>
-                {isAdmin && isLoggedIn && (
-                  <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={(e) => togglePin(topic.id, e)} className={clsx("p-2 rounded-lg border border-base bg-primary hover:bg-amber-500/10", topic.is_pinned ? "text-amber-500 border-amber-500/30" : "text-secondary hover:text-amber-500")} title={topic.is_pinned ? "Открепить" : "Закрепить"}><Pin className="w-4 h-4" /></button>
-                    <button onClick={(e) => deleteTopic(topic.id, e)} className="p-2 rounded-lg border border-base bg-primary hover:bg-rose-500/10 text-secondary hover:text-rose-500" title="Удалить"><Trash2 className="w-4 h-4" /></button>
-                  </div>
-                )}
+                <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {isLoggedIn && (
+                    <button onClick={(e) => openReportTopic(topic.id, e)} className="p-2 rounded-lg border border-base bg-primary hover:bg-amber-500/10 text-secondary hover:text-amber-500" title="Пожаловаться"><Flag className="w-4 h-4" /></button>
+                  )}
+                  {isAdmin && isLoggedIn && (
+                    <>
+                      <button onClick={(e) => togglePin(topic.id, e)} className={clsx("p-2 rounded-lg border border-base bg-primary hover:bg-amber-500/10", topic.is_pinned ? "text-amber-500 border-amber-500/30" : "text-secondary hover:text-amber-500")} title={topic.is_pinned ? "Открепить" : "Закрепить"}><Pin className="w-4 h-4" /></button>
+                      <button onClick={(e) => deleteTopic(topic.id, e)} className="p-2 rounded-lg border border-base bg-primary hover:bg-rose-500/10 text-secondary hover:text-rose-500" title="Удалить"><Trash2 className="w-4 h-4" /></button>
+                    </>
+                  )}
+                </div>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4 text-xs text-secondary">
@@ -217,6 +249,31 @@ export const Forum: React.FC<{ isAdmin?: boolean }> = () => {
                   </button>
                 </div>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Report Topic Modal */}
+      <AnimatePresence>
+        {showReportModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowReportModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-md bg-primary rounded-3xl p-8 shadow-2xl border border-base">
+              <button onClick={() => setShowReportModal(false)} className="absolute top-6 right-6 text-secondary hover:text-primary"><X className="w-6 h-6" /></button>
+              <h2 className="text-2xl font-black mb-2">Пожаловаться на тему</h2>
+              <p className="text-secondary text-sm mb-6">Опишите причину жалобы</p>
+              {reportSuccess ? (
+                <div className="p-4 bg-green-500/10 text-green-500 rounded-xl text-sm font-medium text-center">✓ Жалоба отправлена</div>
+              ) : (
+                <div className="space-y-4">
+                  {reportError && <div className="p-3 bg-rose-500/10 text-rose-500 text-sm rounded-xl">{reportError}</div>}
+                  <textarea value={reportReason} onChange={(e) => setReportReason(e.target.value)} placeholder="Причина жалобы..." className="w-full p-4 bg-secondary border border-base rounded-xl outline-none focus:ring-2 focus:ring-accent h-24" />
+                  <button onClick={submitTopicReport} disabled={!reportReason.trim()} className={clsx("w-full py-3 rounded-xl font-bold transition-all", reportReason.trim() ? "bg-amber-500 text-white hover:bg-amber-600" : "bg-secondary text-secondary cursor-not-allowed")}>
+                    Отправить жалобу
+                  </button>
+                </div>
+              )}
             </motion.div>
           </div>
         )}

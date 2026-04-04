@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, BookOpen, Users, Settings, Plus, Trash2, Edit3, Lock, Unlock, Search, X, Save } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { BarChart3, BookOpen, Users, Settings, Plus, Trash2, Edit3, Lock, Unlock, Search, X, Save, Shield, Check, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx } from 'clsx';
 import { useAuth } from '../context/AuthContext';
-import { adminApi, type StatsResponse } from '../api/adminApi';
+import { adminApi, type StatsResponse, type ReportItem } from '../api/adminApi';
 import { booksApi, type Book, type BookCreateData } from '../api/booksApi';
 import type { UserProfile } from '../api/authApi';
+
+const TARGET_TYPE_LABELS: Record<string, string> = {
+  comment: 'Комментарий',
+  review: 'Отзыв',
+  forum_topic: 'Тема форума',
+  forum_message: 'Сообщение форума',
+};
 
 export const Admin: React.FC = () => {
   const { user } = useAuth();
@@ -13,6 +21,7 @@ export const Admin: React.FC = () => {
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [reports, setReports] = useState<ReportItem[]>([]);
 
   // Book modal state
   const [showBookModal, setShowBookModal] = useState(false);
@@ -45,6 +54,7 @@ export const Admin: React.FC = () => {
     adminApi.getStats().then(r => setStats(r.data)).catch(() => {});
     booksApi.getBooks({ per_page: 100 }).then(r => setBooks(r.data.books)).catch(() => {});
     adminApi.getUsers().then(r => setUsers(r.data)).catch(() => {});
+    adminApi.getReports().then(r => setReports(r.data)).catch(() => {});
     booksApi.getGenres().then(r => setAvailableGenres(r.data)).catch(() => {});
   }, []);
 
@@ -72,7 +82,6 @@ export const Admin: React.FC = () => {
 
   const handleOpenEditBook = async (book: Book) => {
     setEditingBook(book);
-    // Fetch full book data including content for editing/downloading
     try {
       const resp = await booksApi.getBook(book.id);
       const fullBook = resp.data;
@@ -128,6 +137,20 @@ export const Admin: React.FC = () => {
     } catch {}
   };
 
+  const handleResolveReport = async (reportId: number) => {
+    try {
+      await adminApi.resolveReport(reportId);
+      setReports(prev => prev.filter(r => r.id !== reportId));
+    } catch {}
+  };
+
+  const handleDismissReport = async (reportId: number) => {
+    try {
+      await adminApi.dismissReport(reportId);
+      setReports(prev => prev.filter(r => r.id !== reportId));
+    } catch {}
+  };
+
   const filteredBooks = books.filter(b =>
     b.title.toLowerCase().includes(searchBooks.toLowerCase()) ||
     b.author.toLowerCase().includes(searchBooks.toLowerCase())
@@ -142,6 +165,7 @@ export const Admin: React.FC = () => {
     { key: 'stats', label: 'Статистика', icon: BarChart3 },
     { key: 'library', label: 'Библиотека', icon: BookOpen },
     { key: 'users', label: 'Пользователи', icon: Users },
+    { key: 'moderation', label: 'Модерация', icon: Shield, badge: reports.length },
   ];
 
   return (
@@ -162,6 +186,9 @@ export const Admin: React.FC = () => {
             >
               <tab.icon className="w-5 h-5" />
               {tab.label}
+              {'badge' in tab && tab.badge !== undefined && tab.badge > 0 && (
+                <span className={clsx("ml-auto text-xs font-bold px-2 py-0.5 rounded-full", activeTab === tab.key ? "bg-white/20" : "bg-rose-500 text-white")}>{tab.badge}</span>
+              )}
             </button>
           ))}
         </div>
@@ -237,9 +264,11 @@ export const Admin: React.FC = () => {
                 {filteredUsers.map(u => (
                   <div key={u.id} className="flex items-center justify-between p-4 bg-primary border border-base rounded-2xl">
                     <div className="flex items-center gap-4">
-                      <img src={u.avatar || 'https://via.placeholder.com/40'} alt="" className="w-10 h-10 rounded-full object-cover" />
+                      <Link to={`/user/${u.id}`}>
+                        <img src={u.avatar || 'https://via.placeholder.com/40'} alt="" className="w-10 h-10 rounded-full object-cover hover:ring-2 hover:ring-accent transition-all" />
+                      </Link>
                       <div>
-                        <p className="font-bold text-sm">{u.username} {u.role === 'admin' && <span className="text-accent text-xs">(admin)</span>}</p>
+                        <Link to={`/user/${u.id}`} className="font-bold text-sm hover:text-accent transition-colors">{u.username}</Link> {u.role === 'admin' && <span className="text-accent text-xs">(admin)</span>}
                         <p className="text-xs text-secondary">{u.email}</p>
                       </div>
                     </div>
@@ -258,6 +287,48 @@ export const Admin: React.FC = () => {
                   </div>
                 ))}
               </div>
+            </motion.div>
+          )}
+
+          {/* Moderation Tab */}
+          {activeTab === 'moderation' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+              <h2 className="text-xl font-bold">Жалобы на модерации</h2>
+              {reports.length === 0 ? (
+                <div className="text-center py-16 text-secondary">
+                  <Shield className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p>Нет жалоб на рассмотрении</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {reports.map(report => (
+                    <div key={report.id} className="p-6 bg-primary border border-base rounded-2xl space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="px-3 py-1 bg-amber-500/10 text-amber-500 text-xs font-bold rounded-full uppercase">{TARGET_TYPE_LABELS[report.target_type] || report.target_type}</span>
+                          <span className="text-xs text-secondary">ID: {report.target_id}</span>
+                        </div>
+                        <span className="text-xs text-secondary">{new Date(report.created_at).toLocaleString('ru-RU')}</span>
+                      </div>
+                      <div className="p-4 bg-secondary rounded-xl border border-base">
+                        <p className="text-sm text-secondary italic">«{report.target_content_preview}»</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-secondary mb-1">Причина жалобы от <Link to={`/user/${report.reporter_id}`} className="font-bold text-accent hover:underline">{report.reporter_name}</Link>:</p>
+                        <p className="text-sm font-medium">{report.reason}</p>
+                      </div>
+                      <div className="flex gap-3 pt-2">
+                        <button onClick={() => handleResolveReport(report.id)} className="flex items-center gap-2 px-4 py-2 bg-rose-500 text-white rounded-xl font-bold text-sm hover:bg-rose-600 transition-colors">
+                          <Trash2 className="w-4 h-4" /> Удалить объект
+                        </button>
+                        <button onClick={() => handleDismissReport(report.id)} className="flex items-center gap-2 px-4 py-2 bg-secondary border border-base rounded-xl font-bold text-sm hover:bg-primary transition-colors">
+                          <XCircle className="w-4 h-4" /> Отклонить
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </motion.div>
           )}
         </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { Camera, Edit3, Star, BookOpen, Heart, Clock, Shield, ChevronRight, Save, X, MessageCircle, Hash } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx } from 'clsx';
@@ -265,11 +266,18 @@ export const Profile: React.FC = () => {
                 <div className="space-y-4">
                   {reviews.map(review => (
                     <div key={review.id} className="p-4 bg-secondary rounded-xl border border-base">
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex items-center gap-1 text-accent">
-                          {[...Array(5)].map((_, i) => (
-                            <Star key={i} className={clsx("w-4 h-4", i < review.rating ? "fill-current" : "text-base opacity-30")} />
-                          ))}
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          {review.book_title && (
+                            <Link to={`/reader?bookId=${review.book_id}`} className="text-xs font-bold text-secondary hover:text-accent mb-2 inline-block transition-colors">
+                              Отзыв на книгу «{review.book_title}»
+                            </Link>
+                          )}
+                          <div className="flex items-center gap-1 text-accent">
+                            {[...Array(5)].map((_, i) => (
+                              <Star key={i} className={clsx("w-4 h-4", i < review.rating ? "fill-current" : "text-base opacity-30")} />
+                            ))}
+                          </div>
                         </div>
                         <span className="text-xs text-secondary">{new Date(review.created_at).toLocaleDateString()}</span>
                       </div>
@@ -294,9 +302,20 @@ export const Profile: React.FC = () => {
                   {comments.map(comment => (
                     <div key={comment.id} className="p-4 bg-secondary rounded-xl border border-base hover:border-accent/30 transition-colors">
                       <div className="flex justify-between items-start mb-2">
-                        <span className="text-xs text-secondary">{new Date(comment.created_at).toLocaleString()}</span>
+                        <div>
+                          {comment.topic_id ? (
+                            <Link to={`/forum/topic/${comment.topic_id}`} className="text-xs font-bold text-secondary hover:text-accent block transition-colors">
+                              В теме: «{comment.topic_title}»
+                            </Link>
+                          ) : comment.book_title ? (
+                            <Link to={`/reader?bookId=${comment.book_id}`} className="text-xs font-bold text-secondary hover:text-accent block transition-colors">
+                              К книге: «{comment.book_title}»
+                            </Link>
+                          ) : null}
+                        </div>
+                        <span className="text-xs text-secondary shrink-0 ml-4">{new Date(comment.created_at).toLocaleString()}</span>
                       </div>
-                      <p className="text-sm leading-relaxed">{comment.content}</p>
+                      <p className="text-sm leading-relaxed mt-1">{comment.content}</p>
                     </div>
                   ))}
                 </div>
@@ -315,15 +334,13 @@ export const Profile: React.FC = () => {
               ) : (
                 <div className="space-y-4">
                   {topics.map(topic => (
-                    <div key={topic.id} className="p-4 bg-secondary rounded-xl border border-base">
+                    <Link key={topic.id} to={`/forum/topic/${topic.id}`} className="block p-4 bg-secondary rounded-xl border border-base hover:border-accent/30 transition-colors">
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="font-bold text-accent">{topic.title}</h4>
                         <span className="text-xs text-secondary">{new Date(topic.created_at).toLocaleDateString()}</span>
                       </div>
-                      <div>
-                        <span className="px-2 py-1 bg-accent/10 text-accent rounded-lg text-[10px] font-bold uppercase">{topic.tag}</span>
-                      </div>
-                    </div>
+                      <span className="px-2 py-1 bg-accent/10 text-accent rounded-lg text-[10px] font-bold uppercase">{topic.tag}</span>
+                    </Link>
                   ))}
                 </div>
               )}

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.routers import auth, users, books, reviews, comments, forum, favorites, reading_history, admin, bookmarks
+from backend.routers import auth, users, books, reviews, comments, forum, favorites, reading_history, admin, bookmarks, reports
 
 app = FastAPI(
     title="БиблиоТэка API",
@@ -27,6 +27,7 @@ app.include_router(favorites.router)
 app.include_router(reading_history.router)
 app.include_router(admin.router)
 app.include_router(bookmarks.router)
+app.include_router(reports.router)
 
 
 @app.get("/api/health")

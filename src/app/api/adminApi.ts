@@ -8,6 +8,18 @@ export interface StatsResponse {
   total_readings: number;
 }
 
+export interface ReportItem {
+  id: number;
+  reporter_id: number;
+  reporter_name: string;
+  target_type: string;
+  target_id: number;
+  target_content_preview: string;
+  reason: string;
+  status: string;
+  created_at: string;
+}
+
 export const adminApi = {
   getStats: () =>
     api.get<StatsResponse>('admin/stats'),
@@ -23,4 +35,13 @@ export const adminApi = {
 
   unblockUser: (userId: number) =>
     api.put(`admin/users/${userId}/unblock`),
+
+  getReports: () =>
+    api.get<ReportItem[]>('admin/reports'),
+
+  resolveReport: (reportId: number) =>
+    api.put(`admin/reports/${reportId}/resolve`),
+
+  dismissReport: (reportId: number) =>
+    api.put(`admin/reports/${reportId}/dismiss`),
 };

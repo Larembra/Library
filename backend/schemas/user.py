@@ -27,13 +27,26 @@ class PasswordChange(BaseModel):
     new_password: str
 
 
+class UserPublicOut(BaseModel):
+    id: int
+    username: str
+    avatar: Optional[str] = None
+    banner: Optional[str] = None
+    about: Optional[str] = None
+    role: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class UserOut(BaseModel):
     id: int
     username: str
     email: str
-    avatar: str
-    banner: str
-    about: str
+    avatar: Optional[str] = None
+    banner: Optional[str] = None
+    about: Optional[str] = None
     role: str
     is_active: bool
     violation_count: int
@@ -46,7 +59,7 @@ class UserOut(BaseModel):
 class UserBrief(BaseModel):
     id: int
     username: str
-    avatar: str
+    avatar: Optional[str] = None
     role: str
 
     class Config:

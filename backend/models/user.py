@@ -5,6 +5,9 @@ from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime
 from backend.database import Base
 
 
+from backend.utils.time_utils import get_moscow_now
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -18,4 +21,4 @@ class User(Base):
     role = Column(String(20), default="reader")  # reader | admin
     is_active = Column(Boolean, default=True)
     violation_count = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=get_moscow_now)

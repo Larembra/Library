@@ -11,6 +11,9 @@ class CommentCreate(BaseModel):
 class CommentOut(BaseModel):
     id: int
     book_id: int
+    book_title: Optional[str] = None
+    topic_id: Optional[int] = None
+    topic_title: Optional[str] = None
     user_id: int
     user_name: str = ""
     user_avatar: str = ""

@@ -13,6 +13,7 @@ const Admin = lazy(() => import('./pages/Admin').then(module => ({ default: modu
 const Forum = lazy(() => import('./pages/Forum').then(module => ({ default: module.Forum })));
 const ForumTopic = lazy(() => import('./pages/ForumTopic').then(module => ({ default: module.ForumTopic })));
 const Profile = lazy(() => import('./pages/Profile').then(module => ({ default: module.Profile })));
+const UserProfile = lazy(() => import('./pages/UserProfile').then(module => ({ default: module.UserProfile })));
 const Auth = lazy(() => import('./pages/Auth').then(module => ({ default: module.Auth })));
 const Privacy = lazy(() => import('./pages/Privacy').then(module => ({ default: module.Privacy })));
 const Terms = lazy(() => import('./pages/Terms').then(module => ({ default: module.Terms })));
@@ -47,6 +48,7 @@ const AppShell: React.FC = () => {
               <Route path="/forum" element={<Forum isAdmin={true} />} />
               <Route path="/forum/topic/:id" element={<ForumTopic />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/user/:id" element={<UserProfile />} />
               <Route
                 path="/admin"
                 element={

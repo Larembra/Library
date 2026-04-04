@@ -16,8 +16,10 @@ from backend.database import engine, Base, SessionLocal
 from backend.models import (
     User, Book, BookTag, Review, Comment,
     ForumTopic, ForumMessage, ReadingHistory, Favorite, Bookmark,
+    Report,
 )
 from backend.services.auth_service import get_password_hash
+from backend.utils.time_utils import get_moscow_now
 
 
 def create_database():
@@ -216,7 +218,7 @@ def seed_data():
                 text=r_data["text"],
                 likes=r_data["likes"],
                 dislikes=r_data["dislikes"],
-                created_at=datetime.utcnow() - timedelta(days=5 - r_data["book_idx"]),
+                created_at=get_moscow_now() - timedelta(days=5 - r_data["book_idx"]),
             )
             db.add(review)
 
@@ -268,7 +270,7 @@ def seed_data():
                 author_id=user_objects[i % len(user_objects)].id,
                 is_locked=(i == 1),
                 tag="Обсуждение",
-                last_activity=datetime.utcnow() - timedelta(hours=i * 2),
+                last_activity=get_moscow_now() - timedelta(hours=i * 2),
             )
             db.add(topic)
             db.flush()
@@ -288,7 +290,7 @@ def seed_data():
                 book_id=book.id,
                 progress_percent=65 - i * 20,
                 current_page=100 - i * 30,
-                last_read_at=datetime.utcnow() - timedelta(days=i),
+                last_read_at=get_moscow_now() - timedelta(days=i),
             )
             db.add(rh)
 

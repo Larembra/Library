@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ChevronLeft, ThumbsUp, ThumbsDown, Trash2, Pin, Send } from 'lucide-react';
-import { motion } from 'motion/react';
+import { ChevronLeft, ThumbsUp, ThumbsDown, Trash2, Pin, Send, Flag, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import { forumApi, type ForumTopic as ForumTopicData, type ForumMessage } from '../api/forumApi';
 import { clsx } from 'clsx';
@@ -17,6 +17,13 @@ export const ForumTopic: React.FC = () => {
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [replyText, setReplyText] = useState('');
   const [newMessage, setNewMessage] = useState('');
+
+  // Report
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportTargetId, setReportTargetId] = useState<number | null>(null);
+  const [reportReason, setReportReason] = useState('');
+  const [reportSuccess, setReportSuccess] = useState(false);
+  const [reportError, setReportError] = useState('');
 
   useEffect(() => {
     if (!topicId) return;
@@ -86,6 +93,25 @@ export const ForumTopic: React.FC = () => {
     } catch {}
   };
 
+  const openReportModal = (messageId: number) => {
+    setReportTargetId(messageId);
+    setReportReason('');
+    setReportSuccess(false);
+    setReportError('');
+    setShowReportModal(true);
+  };
+
+  const submitReport = async () => {
+    if (!reportTargetId || !reportReason.trim()) return;
+    try {
+      await forumApi.reportMessage(reportTargetId, reportReason);
+      setReportSuccess(true);
+      setTimeout(() => setShowReportModal(false), 1500);
+    } catch (e: any) {
+      setReportError(e.response?.data?.detail || 'Ошибка при отправке жалобы');
+    }
+  };
+
   if (!topic) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -128,11 +154,13 @@ export const ForumTopic: React.FC = () => {
         {messages.map((msg) => (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} key={msg.id} className="flex flex-col md:flex-row gap-6 p-6 bg-primary border border-base rounded-3xl">
             <div className="md:w-32 shrink-0 flex flex-col items-center gap-3">
-              <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-base">
-                <img src={msg.author_avatar || 'https://via.placeholder.com/64'} alt="" className="w-full h-full object-cover" />
-              </div>
+              <Link to={`/user/${msg.author_id}`} className="block">
+                <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-base hover:border-accent transition-colors">
+                  <img src={msg.author_avatar || 'https://via.placeholder.com/64'} alt="" className="w-full h-full object-cover" />
+                </div>
+              </Link>
               <div className="text-center">
-                <p className="font-bold text-sm truncate w-24">{msg.author_name}</p>
+                <Link to={`/user/${msg.author_id}`} className="font-bold text-sm truncate w-24 block hover:text-accent transition-colors">{msg.author_name}</Link>
                 <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${msg.author_role === 'admin' ? 'bg-accent/10 text-accent' : 'bg-secondary text-secondary'}`}>
                   {msg.author_role === 'admin' ? 'Модератор' : 'Участник'}
                 </span>
@@ -153,6 +181,11 @@ export const ForumTopic: React.FC = () => {
                   </button>
                   {isLoggedIn && (
                     <button onClick={() => setReplyingTo(replyingTo === msg.id ? null : msg.id)} className="text-sm font-bold text-accent ml-2">Ответить</button>
+                  )}
+                  {isLoggedIn && user?.id !== msg.author_id && (
+                    <button onClick={() => openReportModal(msg.id)} className="flex items-center gap-1 text-xs text-secondary hover:text-amber-500 transition-colors ml-2" title="Пожаловаться">
+                      <Flag className="w-3.5 h-3.5" />
+                    </button>
                   )}
                 </div>
                 {isLoggedIn && (isAdmin || user?.id === msg.author_id) && (
@@ -184,6 +217,31 @@ export const ForumTopic: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Report Modal */}
+      <AnimatePresence>
+        {showReportModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowReportModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-md bg-primary rounded-3xl p-8 shadow-2xl border border-base">
+              <button onClick={() => setShowReportModal(false)} className="absolute top-6 right-6 text-secondary hover:text-primary"><X className="w-6 h-6" /></button>
+              <h2 className="text-2xl font-black mb-2">Пожаловаться</h2>
+              <p className="text-secondary text-sm mb-6">Опишите причину жалобы на сообщение</p>
+              {reportSuccess ? (
+                <div className="p-4 bg-green-500/10 text-green-500 rounded-xl text-sm font-medium text-center">✓ Жалоба отправлена</div>
+              ) : (
+                <div className="space-y-4">
+                  {reportError && <div className="p-3 bg-rose-500/10 text-rose-500 text-sm rounded-xl">{reportError}</div>}
+                  <textarea value={reportReason} onChange={(e) => setReportReason(e.target.value)} placeholder="Причина жалобы..." className="w-full p-4 bg-secondary border border-base rounded-xl outline-none focus:ring-2 focus:ring-accent h-24" />
+                  <button onClick={submitReport} disabled={!reportReason.trim()} className={clsx("w-full py-3 rounded-xl font-bold transition-all", reportReason.trim() ? "bg-amber-500 text-white hover:bg-amber-600" : "bg-secondary text-secondary cursor-not-allowed")}>
+                    Отправить жалобу
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

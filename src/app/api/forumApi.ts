@@ -61,4 +61,10 @@ export const forumApi = {
 
   reactToMessage: (messageId: number, reactionType: 'like' | 'dislike') =>
     api.post<{ likes: number; dislikes: number }>(`forum/messages/${messageId}/react`, { reaction_type: reactionType }),
+
+  reportTopic: (topicId: number, reason: string) =>
+    api.post('reports', { target_type: 'forum_topic', target_id: topicId, reason }),
+
+  reportMessage: (messageId: number, reason: string) =>
+    api.post('reports', { target_type: 'forum_message', target_id: messageId, reason }),
 };

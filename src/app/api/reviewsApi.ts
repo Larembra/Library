@@ -3,6 +3,7 @@ import api from './client';
 export interface Review {
   id: number;
   book_id: number;
+  book_title?: string;
   user_id: number;
   user_name: string;
   user_avatar: string;
@@ -27,4 +28,7 @@ export const reviewsApi = {
 
   reactToReview: (reviewId: number, reactionType: 'like' | 'dislike') =>
     api.post<{ likes: number; dislikes: number }>(`reviews/${reviewId}/react`, { reaction_type: reactionType }),
+
+  reportReview: (reviewId: number, reason: string) =>
+    api.post('reports', { target_type: 'review', target_id: reviewId, reason }),
 };

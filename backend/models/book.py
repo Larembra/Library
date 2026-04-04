@@ -5,6 +5,9 @@ from sqlalchemy import Column, Integer, String, Text, Boolean, Float, DateTime, 
 from backend.database import Base
 
 
+from backend.utils.time_utils import get_moscow_now
+
+
 class Book(Base):
     __tablename__ = "books"
 
@@ -19,7 +22,7 @@ class Book(Base):
     rating = Column(Float, default=0.0)
     reviews_count = Column(Integer, default=0)
     content = Column(Text, default="")  # Book text for reader
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=get_moscow_now)
 
 
 class BookTag(Base):

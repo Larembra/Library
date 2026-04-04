@@ -5,7 +5,7 @@ import { reviewsApi, type Review } from '../api/reviewsApi';
 import { commentsApi, type Comment } from '../api/commentsApi';
 import { usersApi } from '../api/usersApi';
 import { Rating } from '../components/Rating';
-import { Heart, Share2, BookOpen, MessageSquare, Star, ThumbsUp, ThumbsDown, Trash2, Send, X, Copy, Check } from 'lucide-react';
+import { Heart, Share2, BookOpen, MessageSquare, Star, ThumbsUp, ThumbsDown, Trash2, Send, X, Copy, Check, Flag } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx } from 'clsx';
 import { useAuth } from '../context/AuthContext';
@@ -32,6 +32,13 @@ export const BookDetails: React.FC = () => {
   // Share modal
   const [showShareModal, setShowShareModal] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Report modal
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportTarget, setReportTarget] = useState<{ type: 'comment' | 'review'; id: number } | null>(null);
+  const [reportReason, setReportReason] = useState('');
+  const [reportSuccess, setReportSuccess] = useState(false);
+  const [reportError, setReportError] = useState('');
 
   useEffect(() => {
     if (!bookId) return;
@@ -142,6 +149,29 @@ export const BookDetails: React.FC = () => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {}
+  };
+
+  const openReportModal = (type: 'comment' | 'review', targetId: number) => {
+    setReportTarget({ type, id: targetId });
+    setReportReason('');
+    setReportSuccess(false);
+    setReportError('');
+    setShowReportModal(true);
+  };
+
+  const submitReport = async () => {
+    if (!reportTarget || !reportReason.trim()) return;
+    try {
+      if (reportTarget.type === 'comment') {
+        await commentsApi.reportComment(reportTarget.id, reportReason);
+      } else {
+        await reviewsApi.reportReview(reportTarget.id, reportReason);
+      }
+      setReportSuccess(true);
+      setTimeout(() => setShowReportModal(false), 1500);
+    } catch (e: any) {
+      setReportError(e.response?.data?.detail || 'Ошибка при отправке жалобы');
+    }
   };
 
   if (!book) {
@@ -272,11 +302,13 @@ export const BookDetails: React.FC = () => {
                       reviews.map(review => (
                         <div key={review.id} className="p-6 bg-secondary/50 rounded-2xl border border-base space-y-4">
                           <div className="flex items-start gap-4">
-                            <img src={review.user_avatar || 'https://via.placeholder.com/48'} alt={review.user_name} className="w-12 h-12 rounded-full object-cover" />
+                            <Link to={`/user/${review.user_id}`}>
+                              <img src={review.user_avatar || 'https://via.placeholder.com/48'} alt={review.user_name} className="w-12 h-12 rounded-full object-cover hover:ring-2 hover:ring-accent transition-all cursor-pointer" />
+                            </Link>
                             <div className="flex-1">
                               <div className="flex items-center justify-between mb-2">
                                 <div>
-                                  <p className="font-bold">{review.user_name}</p>
+                                  <Link to={`/user/${review.user_id}`} className="font-bold hover:text-accent transition-colors">{review.user_name}</Link>
                                   <div className="flex items-center gap-2 mt-1">
                                     <div className="flex">{[1,2,3,4,5].map(star => (<Star key={star} className={clsx("w-4 h-4", star <= review.rating ? "fill-amber-500 text-amber-500" : "text-gray-400")} />))}</div>
                                     <span className="text-xs text-secondary">{new Date(review.created_at).toLocaleDateString('ru-RU')}</span>
@@ -287,6 +319,11 @@ export const BookDetails: React.FC = () => {
                               <div className="flex items-center gap-4 mt-3">
                                 <button type="button" onClick={() => handleReviewReaction(review.id, 'like')} className={clsx("flex items-center gap-1 text-xs transition-colors", review.liked_by_user ? 'text-accent' : 'text-secondary hover:text-accent', !isLoggedIn && 'opacity-50 cursor-not-allowed')} disabled={!isLoggedIn}><ThumbsUp className="w-3 h-3" /> {review.likes}</button>
                                 <button type="button" onClick={() => handleReviewReaction(review.id, 'dislike')} className={clsx("flex items-center gap-1 text-xs transition-colors", review.disliked_by_user ? 'text-rose-500' : 'text-secondary hover:text-rose-500', !isLoggedIn && 'opacity-50 cursor-not-allowed')} disabled={!isLoggedIn}><ThumbsDown className="w-3 h-3" /> {review.dislikes}</button>
+                                {isLoggedIn && user?.id !== review.user_id && (
+                                  <button onClick={() => openReportModal('review', review.id)} className="flex items-center gap-1 text-xs text-secondary hover:text-amber-500 transition-colors ml-auto" title="Пожаловаться">
+                                    <Flag className="w-3 h-3" /> Жалоба
+                                  </button>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -309,15 +346,22 @@ export const BookDetails: React.FC = () => {
                     <div key={comment.id} className="p-4 rounded-xl border border-base space-y-3">
                       <div className="flex justify-between items-start">
                         <div className="flex items-center gap-3">
-                          <img src={comment.user_avatar || 'https://via.placeholder.com/40'} className="w-10 h-10 rounded-full object-cover" alt="" />
+                          <Link to={`/user/${comment.user_id}`}>
+                            <img src={comment.user_avatar || 'https://via.placeholder.com/40'} className="w-10 h-10 rounded-full object-cover hover:ring-2 hover:ring-accent transition-all cursor-pointer" alt="" />
+                          </Link>
                           <div>
-                            <p className="text-sm font-bold">{comment.user_name}</p>
+                            <Link to={`/user/${comment.user_id}`} className="text-sm font-bold hover:text-accent transition-colors">{comment.user_name}</Link>
                             <p className="text-[10px] text-secondary">{new Date(comment.created_at).toLocaleDateString('ru-RU')}</p>
                           </div>
                         </div>
-                        {isLoggedIn && (user?.role === 'admin' || user?.id === comment.user_id) && (
-                          <button onClick={() => deleteComment(comment.id)} className="text-rose-500 hover:bg-rose-500/10 p-2 rounded-lg"><Trash2 className="w-4 h-4" /></button>
-                        )}
+                        <div className="flex items-center gap-1">
+                          {isLoggedIn && user?.id !== comment.user_id && (
+                            <button onClick={() => openReportModal('comment', comment.id)} className="p-2 text-secondary hover:text-amber-500 transition-colors" title="Пожаловаться"><Flag className="w-4 h-4" /></button>
+                          )}
+                          {isLoggedIn && (user?.role === 'admin' || user?.id === comment.user_id) && (
+                            <button onClick={() => deleteComment(comment.id)} className="text-rose-500 hover:bg-rose-500/10 p-2 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                          )}
+                        </div>
                       </div>
                       <p className="text-sm">{comment.content}</p>
                       <div className="flex items-center gap-4">
@@ -331,8 +375,10 @@ export const BookDetails: React.FC = () => {
                           {comment.replies.map(reply => (
                             <div key={reply.id} className="p-3 bg-secondary/30 rounded-lg">
                               <div className="flex items-center gap-2 mb-1">
-                                <img src={reply.user_avatar || 'https://via.placeholder.com/24'} className="w-6 h-6 rounded-full object-cover" alt="" />
-                                <span className="text-xs font-bold">{reply.user_name}</span>
+                                <Link to={`/user/${reply.user_id}`}>
+                                  <img src={reply.user_avatar || 'https://via.placeholder.com/24'} className="w-6 h-6 rounded-full object-cover hover:ring-2 hover:ring-accent transition-all" alt="" />
+                                </Link>
+                                <Link to={`/user/${reply.user_id}`} className="text-xs font-bold hover:text-accent transition-colors">{reply.user_name}</Link>
                               </div>
                               <p className="text-sm">{reply.content}</p>
                             </div>
@@ -375,6 +421,31 @@ export const BookDetails: React.FC = () => {
                   </button>
                 </div>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Report Modal */}
+      <AnimatePresence>
+        {showReportModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowReportModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-md bg-primary rounded-3xl p-8 shadow-2xl border border-base">
+              <button onClick={() => setShowReportModal(false)} className="absolute top-6 right-6 text-secondary hover:text-primary"><X className="w-6 h-6" /></button>
+              <h2 className="text-2xl font-black mb-2">Пожаловаться</h2>
+              <p className="text-secondary text-sm mb-6">Опишите причину жалобы на {reportTarget?.type === 'review' ? 'отзыв' : 'комментарий'}</p>
+              {reportSuccess ? (
+                <div className="p-4 bg-green-500/10 text-green-500 rounded-xl text-sm font-medium text-center">✓ Жалоба отправлена</div>
+              ) : (
+                <div className="space-y-4">
+                  {reportError && <div className="p-3 bg-rose-500/10 text-rose-500 text-sm rounded-xl">{reportError}</div>}
+                  <textarea value={reportReason} onChange={(e) => setReportReason(e.target.value)} placeholder="Причина жалобы..." className="w-full p-4 bg-secondary border border-base rounded-xl outline-none focus:ring-2 focus:ring-accent h-24" />
+                  <button onClick={submitReport} disabled={!reportReason.trim()} className={clsx("w-full py-3 rounded-xl font-bold transition-all", reportReason.trim() ? "bg-amber-500 text-white hover:bg-amber-600" : "bg-secondary text-secondary cursor-not-allowed")}>
+                    Отправить жалобу
+                  </button>
+                </div>
+              )}
             </motion.div>
           </div>
         )}

@@ -11,6 +11,7 @@ class ReviewCreate(BaseModel):
 class ReviewOut(BaseModel):
     id: int
     book_id: int
+    book_title: Optional[str] = None
     user_id: int
     user_name: str = ""
     user_avatar: str = ""

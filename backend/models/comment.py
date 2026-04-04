@@ -5,6 +5,9 @@ from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Uniq
 from backend.database import Base
 
 
+from backend.utils.time_utils import get_moscow_now
+
+
 class Comment(Base):
     __tablename__ = "comments"
 
@@ -15,7 +18,7 @@ class Comment(Base):
     content = Column(Text, nullable=False)
     likes = Column(Integer, default=0)
     dislikes = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=get_moscow_now)
 
 
 class CommentReaction(Base):
